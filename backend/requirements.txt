@@ -1,0 +1,17 @@
+# DemandTest Platform - Backend Requirements
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic-settings==2.1.0
+
+# Crawler
+playwright==1.41.0
+requests==2.31.0
+
+# Excel Export
+openpyxl==3.1.2
+
+# OCR (Optional)
+# paddleocr==2.7.0
+# paddlepaddle==2.6.0
