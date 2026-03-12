@@ -367,7 +367,38 @@ SESSION_TIMEOUT=3600
 
 ## 🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！
+我们欢迎所有形式的贡献！
+
+### 贡献方式
+
+1. **Fork + Pull Request** - 标准开源协作模式
+2. **报告 Bug** - 创建 Issue 描述问题
+3. **提出功能** - 创建 Issue 描述需求
+4. **完善文档** - 修复错别字、补充说明
+
+### 快速开始
+
+```bash
+# 1. Fork 后克隆
+git clone https://github.com/YOUR_USERNAME/DemandTest.git
+
+# 2. 创建功能分支
+git checkout -b feature/your-feature
+
+# 3. 提交变更
+git commit -m "feat: 添加XXX功能"
+
+# 4. 推送并发起 PR
+git push origin feature/your-feature
+```
+
+### 详细指南
+
+查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解：
+- 分支保护规则
+- 提交信息规范
+- PR 审查流程
+- 代码规范
 
 ## 📄 许可证
 

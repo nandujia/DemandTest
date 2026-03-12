@@ -1,0 +1,27 @@
+# CODEOWNERS - 代码所有者
+# 任何对以下路径的变更都需要指定人员的审查
+
+# 默认所有者
+* @nandujia
+
+# 核心模块
+/app/core/ @nandujia
+
+# LLM 适配层
+/app/llm/ @nandujia
+
+# 技能系统
+/app/skills/ @nandujia
+
+# 爬虫服务
+/app/services/crawler/ @nandujia
+
+# API 接口
+/app/api/ @nandujia
+
+# 配置文件
+/app/config.py @nandujia
+
+# 文档
+/docs/ @nandujia
+/README.md @nandujia
