@@ -8,6 +8,7 @@ from .export_skill import ExportSkill
 from .qa_skill import QASkill
 from .knowledge_skill import KnowledgeSkill
 from .demand_extractor_skill import DemandExtractorSkill
+from .full_extractor import FullDemandExtractor
 
 __all__ = [
     "BaseSkill",
@@ -19,4 +20,5 @@ __all__ = [
     "QASkill",
     "KnowledgeSkill",
     "DemandExtractorSkill",
+    "FullDemandExtractor",
 ]
