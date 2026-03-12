@@ -6,12 +6,16 @@
 import asyncio
 import json
 import uuid
+import logging
 from typing import Dict, Any, Optional, Callable, List
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 import traceback
+
+# 获取日志器
+logger = logging.getLogger(__name__)
 
 
 class TaskStatus(str, Enum):
@@ -82,7 +86,7 @@ class AsyncTaskManager:
         self.tasks[task_id] = task
         self.progress_callbacks[task_id] = []
         
-        print(f"[任务管理] 创建任务: {task_id}")
+        logger.info(f"[TaskManager] 创建任务: {task_id}")
         return task_id
     
     def get_task(self, task_id: str) -> Optional[TaskResult]:
@@ -114,10 +118,10 @@ class AsyncTaskManager:
         for callback in self.progress_callbacks.get(task_id, []):
             try:
                 callback(task.progress)
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Progress callback failed: {e}")
         
-        print(f"[任务进度] {task_id[:8]}... | {step}: {current}/{total} ({task.progress.percentage}%)")
+        logger.info(f"Task progress: {task_id[:8]}... | {step}: {current}/{total} ({task.progress.percentage}%)")
     
     async def run_task(
         self,
@@ -154,7 +158,7 @@ class AsyncTaskManager:
             task.completed_at = datetime.now()
             task.result = result
             
-            print(f"[任务管理] 任务完成: {task_id}")
+            logger.info(f"[TaskManager] 任务完成: {task_id}")
             
         except Exception as e:
             # 更新为失败
@@ -163,7 +167,7 @@ class AsyncTaskManager:
             task.error = str(e)
             task.traceback = traceback.format_exc()
             
-            print(f"[任务管理] 任务失败: {task_id}")
+            logger.info(f"[TaskManager] 任务失败: {task_id}")
             print(f"           错误: {e}")
         
         # 保存结果
@@ -224,7 +228,7 @@ class AsyncTaskManager:
             del self.progress_callbacks[task_id]
         
         if to_remove:
-            print(f"[任务管理] 清理 {len(to_remove)} 个过期任务")
+            logger.info(f"[TaskManager] 清理 {len(to_remove)} 个过期任务")
 
 
 # 全局实例

@@ -17,9 +17,7 @@ from .schema import (
     GenerationResult,
     ExportResult,
 )
-
-# Engine 需要单独导入，避免循环依赖
-# from .engine import Engine, WorkflowState, WorkflowContext
+from .logging_config import setup_logging, get_logger
 
 __all__ = [
     # Schema
@@ -33,4 +31,7 @@ __all__ = [
     "ExtractionResult",
     "GenerationResult",
     "ExportResult",
+    # Logging
+    "setup_logging",
+    "get_logger",
 ]

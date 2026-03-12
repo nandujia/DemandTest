@@ -1,8 +1,12 @@
 """Modao crawler with hierarchy support"""
 
 import re
+import logging
 from typing import List, Dict, Optional
 from playwright.sync_api import sync_playwright
+
+# 获取日志器
+logger = logging.getLogger(__name__)
 
 
 class ModaoCrawler:
@@ -24,8 +28,8 @@ class ModaoCrawler:
                 if 'axdata.modao.ink' in response.url and 'document.js' in response.url:
                     try:
                         self.document_content = response.text()
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"Failed to get document.js: {e}")
             
             page.on('response', handle_response)
             page.goto(url, timeout=self.timeout * 1000, wait_until="domcontentloaded")

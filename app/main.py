@@ -6,33 +6,39 @@ Open-Source Automated Testing Tool Based on Multimodal LLM
 版本 Version: 3.1.0-dev
 """
 
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.api import analyze
 from app.platforms.registry import PlatformRegistry
+from app.core.logging_config import setup_logging, get_logger
+
+# 初始化日志
+setup_logging(level="INFO", log_dir="./logs")
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期 | Application lifecycle"""
     # 启动时 Startup
-    print("\n" + "="*60)
-    print("智测AI (Testify AI) v3.1.0-dev")
-    print("基于多模态大模型的开源自动化测试工具")
-    print("="*60)
-    print(f"已注册平台 Registered platforms: {len(PlatformRegistry._platforms)}")
+    logger.info("=" * 60)
+    logger.info("智测AI (Testify AI) v3.1.0-dev")
+    logger.info("基于多模态大模型的开源自动化测试工具")
+    logger.info("=" * 60)
+    logger.info(f"已注册平台 Registered platforms: {len(PlatformRegistry._platforms)}")
     for p in PlatformRegistry.list_platforms():
-        print(f"  - {p['display_name']} ({p['display_name_en']})")
-    print("="*60 + "\n")
+        logger.info(f"  - {p['display_name']} ({p['display_name_en']})")
+    logger.info("=" * 60)
     
     yield
     
     # 关闭时 Shutdown
-    print("\n" + "="*60)
-    print("智测AI (Testify AI) shutting down...")
-    print("="*60 + "\n")
+    logger.info("=" * 60)
+    logger.info("智测AI (Testify AI) shutting down...")
+    logger.info("=" * 60)
 
 
 app = FastAPI(

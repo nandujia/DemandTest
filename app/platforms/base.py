@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 平台适配器基类
 Platform Adapter Base Class
@@ -112,11 +114,11 @@ class BasePlatformAdapter(ABC):
         """
         start_time = datetime.now()
         
-        print(f"\n{'='*60}")
-        print(f"[{self.info.display_name}] 开始数据提取")
-        print(f"[{self.info.display_name_en}] Starting data extraction")
-        print(f"URL: {url}")
-        print(f"{'='*60}\n")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"[{self.info.display_name}] 开始数据提取")
+        logger.info(f"[{self.info.display_name_en}] Starting data extraction")
+        logger.info(f"URL: {url}")
+        logger.info(f"{'='*60}\n")
         
         try:
             # Step 1: 设置嗅探模式
@@ -127,8 +129,8 @@ class BasePlatformAdapter(ABC):
                 for pattern in pattern_list:
                     self.sniffer.register_pattern(category, pattern)
             
-            print(f"[INFO] 已注册 {len(self.sniffer.patterns)} 个嗅探模式")
-            print(f"[INFO] Registered {len(self.sniffer.patterns)} sniffing patterns")
+            logger.info(f"[INFO] 已注册 {len(self.sniffer.patterns)} 个嗅探模式")
+            logger.info(f"[INFO] Registered {len(self.sniffer.patterns)} sniffing patterns")
             
             # Step 2: 执行嗅探
             sniff_result = await self.sniffer.sniff(url, platform=self.info.name)
@@ -152,17 +154,17 @@ class BasePlatformAdapter(ABC):
                 nodes = await self.parse_sniffed_data(self._cached_data)
             else:
                 nodes = []
-                print(f"[WARN] 未拦截到任何数据包")
-                print(f"[WARN] No data packets intercepted")
+                logger.info(f"[WARN] 未拦截到任何数据包")
+                logger.info(f"[WARN] No data packets intercepted")
             
             # Step 5: 返回结果
             elapsed = (datetime.now() - start_time).total_seconds()
             
-            print(f"\n{'='*60}")
-            print(f"[SUCCESS] 提取完成")
-            print(f"  页面数: {len(nodes)}")
-            print(f"  耗时: {elapsed:.2f}秒")
-            print(f"{'='*60}\n")
+            logger.info(f"\n{'='*60}")
+            logger.info(f"[SUCCESS] 提取完成")
+            logger.info(f"  页面数: {len(nodes)}")
+            logger.info(f"  耗时: {elapsed:.2f}秒")
+            logger.info(f"{'='*60}\n")
             
             return ExtractionResult(
                 platform=self.info.name,
@@ -176,11 +178,11 @@ class BasePlatformAdapter(ABC):
         except Exception as e:
             elapsed = (datetime.now() - start_time).total_seconds()
             
-            print(f"\n{'='*60}")
-            print(f"[ERROR] 提取失败")
-            print(f"  错误: {e}")
-            print(f"  耗时: {elapsed:.2f}秒")
-            print(f"{'='*60}\n")
+            logger.info(f"\n{'='*60}")
+            logger.info(f"[ERROR] 提取失败")
+            logger.info(f"  错误: {e}")
+            logger.info(f"  耗时: {elapsed:.2f}秒")
+            logger.info(f"{'='*60}\n")
             
             return ExtractionResult(
                 platform=self.info.name,

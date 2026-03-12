@@ -6,12 +6,16 @@
 import asyncio
 import json
 import re
+import logging
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from playwright.async_api import async_playwright, Page, Response, Route, Request
+
+# 获取日志器
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -84,8 +88,8 @@ class DataSniffer:
             matches = self._match_patterns(url)
             
             if matches:
-                print(f"[嗅探] 拦截请求: {method} {url[:80]}...")
-                print(f"       匹配规则: {matches}")
+                logger.info(f"[Sniffer] 拦截请求: {method} {url[:80]}...")
+                logger.debug(f"    匹配规则: {matches}")
                 
                 try:
                     # 继续请求
@@ -94,7 +98,7 @@ class DataSniffer:
                     # 检查编码，跳过 deflate（Playwright解压有bug）
                     content_encoding = response.headers.get('content-encoding', '')
                     if 'deflate' in content_encoding.lower():
-                        print(f"       [跳过] deflate编码，等待浏览器处理")
+                        logger.debug(f"    [跳过] deflate编码，等待浏览器处理")
                         await route.continue_()
                         return
                     
@@ -103,7 +107,7 @@ class DataSniffer:
                     # 尝试解析JSON
                     try:
                         parsed_body = json.loads(body)
-                    except:
+                    except (json.JSONDecodeError, ValueError):
                         parsed_body = body
                     
                     # 记录嗅探数据
@@ -127,7 +131,7 @@ class DataSniffer:
                     
                 except Exception as e:
                     # 遇到错误时继续请求，不要阻塞
-                    print(f"       [错误] {e}")
+                    logger.debug(f"    [错误] {e}")
                     await route.continue_()
             else:
                 # 不拦截，直接继续
@@ -194,10 +198,10 @@ class DataSniffer:
         Returns:
             嗅探结果
         """
-        print(f"\n{'='*60}")
-        print(f"开始数据嗅探")
-        print(f"URL: {url}")
-        print(f"{'='*60}\n")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"开始数据嗅探")
+        logger.info(f"URL: {url}")
+        logger.info(f"{'='*60}\n")
         
         # 根据平台设置匹配规则
         if platform == "auto":
@@ -220,18 +224,18 @@ class DataSniffer:
             page = await context.new_page()
             
             try:
-                print("1. 导航到页面...")
+                logger.info("1. 导航到页面...")
                 await page.goto(url, wait_until="networkidle", timeout=60000)
                 await page.wait_for_timeout(3000)
                 
-                print("2. 触发数据加载...")
+                logger.info("2. 触发数据加载...")
                 await self._trigger_data_loading(page)
                 
-                print("3. 等待所有请求完成...")
+                logger.info("3. 等待所有请求完成...")
                 await page.wait_for_timeout(5000)
                 
             except Exception as e:
-                print(f"错误: {e}")
+                logger.info(f"错误: {e}")
             finally:
                 await browser.close()
         
@@ -281,14 +285,14 @@ class DataSniffer:
         
         result["output_file"] = str(output_file)
         
-        print(f"\n{'='*60}")
-        print(f"嗅探完成!")
-        print(f"  拦截数据包: {result['sniffed_count']} 个")
-        print(f"  数据来源: {list(result['data_sources'].keys())}")
-        print(f"  隐藏字段: {len(result['hidden_fields'])} 个")
-        print(f"  内部备注: {len(result['internal_notes'])} 条")
-        print(f"  输出文件: {output_file}")
-        print(f"{'='*60}\n")
+        logger.info(f"\n{'='*60}")
+        logger.info(f"嗅探完成!")
+        logger.info(f"  拦截数据包: {result['sniffed_count']} 个")
+        logger.info(f"  数据来源: {list(result['data_sources'].keys())}")
+        logger.info(f"  隐藏字段: {len(result['hidden_fields'])} 个")
+        logger.info(f"  内部备注: {len(result['internal_notes'])} 条")
+        logger.info(f"  输出文件: {output_file}")
+        logger.info(f"{'='*60}\n")
         
         return result
     
@@ -343,11 +347,11 @@ class DataSniffer:
             for btn in expand_buttons[:3]:
                 await btn.click()
                 await page.wait_for_timeout(200)
-        except:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to click expand buttons: {e}")
         
         # === JS注入获取sitemap（绕过deflate解压问题）===
-        print("   注入JS获取页面目录...")
+        logger.info("   注入JS获取页面目录...")
         
         # 等待iframe加载
         await page.wait_for_timeout(3000)
@@ -399,7 +403,7 @@ class DataSniffer:
             
             if sitemap_result and sitemap_result.get('pages'):
                 pages = sitemap_result['pages']
-                print(f"   主页面JS注入成功: {len(pages)} 个页面")
+                logger.debug(f"主页面JS注入成功: {len(pages)} 个页面")
                 
                 self.sniffed_data.append(SniffedData(
                     url="js://sitemap",
@@ -411,10 +415,10 @@ class DataSniffer:
                 ))
                 return
             else:
-                print("   主页面: 未找到数据")
+                logger.info("   主页面: 未找到数据")
                 
         except Exception as e:
-            print(f"   主页面JS注入失败: {e}")
+            logger.debug(f"主页面JS注入失败: {e}")
         
         # 方法2: 在iframe中查找
         try:
@@ -454,7 +458,7 @@ class DataSniffer:
             
             if sitemap_result and sitemap_result.get('pages'):
                 pages = sitemap_result['pages']
-                print(f"   iframe JS注入成功: {len(pages)} 个页面")
+                logger.debug(f"iframe JS注入成功: {len(pages)} 个页面")
                 
                 self.sniffed_data.append(SniffedData(
                     url="js://sitemap/iframe",
@@ -465,10 +469,10 @@ class DataSniffer:
                     source="js_sitemap"
                 ))
             else:
-                print("   iframe: 未找到数据")
+                logger.info("   iframe: 未找到数据")
                 
         except Exception as e:
-            print(f"   iframe JS注入失败: {e}")
+            logger.debug(f"iframe JS注入失败: {e}")
 
 
 # 便捷函数
@@ -483,7 +487,7 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python sniffer.py <url> [platform]")
+        logger.info("Usage: python sniffer.py <url> [platform]")
         sys.exit(1)
     
     url = sys.argv[1]

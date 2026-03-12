@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 平台适配器基类
 低侵入式设计：每个平台一个适配器，互不干扰
@@ -82,8 +84,8 @@ class BaseAdapter(ABC):
         3. 解析数据
         4. 返回结果
         """
-        print(f"\n[{self.display_name}] 开始提取")
-        print(f"URL: {url}")
+        logger.info(f"\n[{self.display_name}] 开始提取")
+        logger.info(f"URL: {url}")
         
         # 设置嗅探模式
         patterns = self.get_sniff_patterns()

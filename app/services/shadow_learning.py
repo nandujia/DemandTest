@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 影子运行自学习服务
 核心思想：记录用户修正 + Prompt + Context，构建Few-Shot学习库
@@ -106,9 +108,9 @@ class ShadowLearningService:
                             platform=item.get("platform", ""),
                         )
                         self.cases.append(case)
-                print(f"[学习服务] 已加载 {len(self.cases)} 个修正案例")
+                logger.info(f"[Learning] 已加载 {len(self.cases)} 个修正案例")
             except Exception as e:
-                print(f"[学习服务] 加载失败: {e}")
+                logger.info(f"[Learning] 加载失败: {e}")
     
     def _save_cases(self):
         """保存修正案例"""
@@ -131,7 +133,7 @@ class ShadowLearningService:
                     self.keyword_index[keyword] = []
                 self.keyword_index[keyword].append(case.id)
         
-        print(f"[学习服务] 索引构建完成，关键词数: {len(self.keyword_index)}")
+        logger.info(f"[Learning] 索引构建完成，关键词数: {len(self.keyword_index)}")
     
     def _extract_keywords(self, text: str) -> List[str]:
         """提取关键词（简单实现：分词 + 过滤停用词）"""
@@ -195,8 +197,8 @@ class ShadowLearningService:
                 self.keyword_index[keyword] = []
             self.keyword_index[keyword].append(case.id)
         
-        print(f"[学习服务] 记录修正案例: {case.id}")
-        print(f"           类型: {correction_type}, 关键词: {keywords[:5]}")
+        logger.info(f"[Learning] 记录修正案例: {case.id}")
+        logger.debug(f"类型: {correction_type}, 关键词: {keywords[:5]}")
         
         return case
     
@@ -248,7 +250,7 @@ class ShadowLearningService:
                     relevance_score=score
                 ))
         
-        print(f"[学习服务] 检索到 {len(examples)} 个相似案例")
+        logger.info(f"[Learning] 检索到 {len(examples)} 个相似案例")
         return examples
     
     def build_few_shot_prompt(
@@ -334,9 +336,9 @@ if __name__ == "__main__":
     
     # 检索相似案例
     examples = service.search_similar_cases("生成登录测试用例")
-    print(f"\n检索结果:")
+    logger.info(f"\n检索结果:")
     for ex in examples:
-        print(f"  - {ex.source_case_id}: {ex.relevance_score:.2f}")
+        logger.info(f"  - {ex.source_case_id}: {ex.relevance_score:.2f}")
     
     # 统计
-    print(f"\n统计: {service.get_statistics()}")
+    logger.info(f"\n统计: {service.get_statistics()}")

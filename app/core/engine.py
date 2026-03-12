@@ -13,6 +13,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime
 import asyncio
+import logging
 
 from app.core.schema import (
     ExtractionResult,
@@ -25,6 +26,9 @@ from app.adapters.sniffer import DataSniffer
 from app.services.shadow_learning import get_shadow_learning
 from app.services.async_tasks import get_task_manager
 from app.llm import BaseLLM, LLMFactory
+
+# 获取日志器
+logger = logging.getLogger(__name__)
 
 
 class WorkflowState(str, Enum):
@@ -243,7 +247,7 @@ class Engine:
             return cases
             
         except Exception as e:
-            print(f"[Engine] 生成失败: {e}")
+            logger.info(f"[Engine] 生成失败: {e}")
             return []
     
     def _parse_test_cases(
@@ -342,10 +346,10 @@ class Engine:
                     "percentage": round(current / total * 100, 1) if total > 0 else 0,
                     "message": message
                 })
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Progress callback failed: {e}")
         
-        print(f"[Engine] {state.value}: {message} ({current}/{total})")
+        logger.info(f"[Engine] {state.value}: {message} ({current}/{total})")
     
     def _build_response(self, ctx: WorkflowContext) -> Dict[str, Any]:
         """构建响应 Build response"""

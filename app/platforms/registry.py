@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 平台注册表
 Platform Registry
@@ -63,7 +65,7 @@ class PlatformRegistry:
             adapter_class=adapter_class
         )
         
-        print(f"[Registry] 注册平台: {info.display_name} ({info.display_name_en})")
+        logger.info(f"[Registry] 注册平台: {info.display_name} ({info.display_name_en})")
     
     @classmethod
     def unregister(cls, name: str) -> bool:
@@ -79,7 +81,7 @@ class PlatformRegistry:
         """
         if name in cls._platforms:
             del cls._platforms[name]
-            print(f"[Registry] 注销平台: {name}")
+            logger.info(f"[Registry] 注销平台: {name}")
             return True
         return False
     
@@ -178,7 +180,7 @@ class PlatformRegistry:
             from app.platforms.modao.adapter import ModaoAdapter
             cls.register(ModaoAdapter)
         except ImportError:
-            print("[Registry] 墨刀适配器未找到 / Modao adapter not found")
+            logger.info("[Registry] 墨刀适配器未找到 / Modao adapter not found")
         
         # 注册蓝湖平台（待实现）
         # try:
@@ -195,7 +197,7 @@ class PlatformRegistry:
         #     pass
         
         cls._initialized = True
-        print(f"[Registry] 自动注册完成，共 {len(cls._platforms)} 个平台")
+        logger.info(f"[Registry] 自动注册完成，共 {len(cls._platforms)} 个平台")
 
 
 # 模块加载时自动注册
