@@ -1,6 +1,4 @@
-"""
-Skills 模块
-"""
+"""Skills module"""
 
 from .base import BaseSkill, SkillResult
 from .registry import SkillRegistry
@@ -9,6 +7,7 @@ from .testcase_skill import TestCaseSkill
 from .export_skill import ExportSkill
 from .qa_skill import QASkill
 from .knowledge_skill import KnowledgeSkill
+from .demand_extractor_skill import DemandExtractorSkill
 
 __all__ = [
     "BaseSkill",
@@ -19,4 +18,5 @@ __all__ = [
     "ExportSkill",
     "QASkill",
     "KnowledgeSkill",
+    "DemandExtractorSkill",
 ]

@@ -9,8 +9,9 @@ import re
 class Intent(str, Enum):
     ANALYZE_URL = "analyze_url"
     GENERATE_TESTCASE = "gen_testcase"
+    EXTRACT_DEMAND = "extract_demand"  # New
     EXPORT = "export"
-    SELECT = "select"  # New: user selecting pages
+    SELECT = "select"
     QA = "qa"
     HELP = "help"
     UNKNOWN = "unknown"
@@ -29,19 +30,32 @@ class IntentAgent:
         self.llm = llm
     
     def analyze(self, user_message: str, session=None) -> IntentResult:
-        # Rule-based matching
         message_lower = user_message.lower()
         
         # URL analysis
         if self._contains_url(user_message):
             url = self._extract_url(user_message)
-            return IntentResult(
-                intent=Intent.ANALYZE_URL,
-                entities={"url": url},
-                confidence=0.95
-            )
+            return IntentResult(intent=Intent.ANALYZE_URL, entities={"url": url}, confidence=0.95)
         
-        # Selection (keywords like 选择, 生成xxx的)
+        # Extract demand (new)
+        extract_patterns = [
+            r'提取\s*(.+?)\s*的需求',
+            r'解析\s*(.+?)\s*的需求',
+            r'提取需求.*选择\s+(.+)',
+            r'从\s*(.+?)\s*提取需求',
+        ]
+        
+        for pattern in extract_patterns:
+            match = re.search(pattern, user_message)
+            if match:
+                selection = match.group(1).strip()
+                return IntentResult(intent=Intent.EXTRACT_DEMAND, entities={"selection": selection}, confidence=0.9)
+        
+        # Simple extract demand
+        if any(kw in message_lower for kw in ["提取需求", "解析需求", "提取页面需求"]):
+            return IntentResult(intent=Intent.EXTRACT_DEMAND, confidence=0.85)
+        
+        # Selection for test cases
         select_patterns = [
             r'选择\s+(.+)',
             r'生成\s+(.+?)\s*(?:的)?测试用例',
@@ -53,11 +67,7 @@ class IntentAgent:
             match = re.search(pattern, user_message)
             if match:
                 selection = match.group(1).strip()
-                return IntentResult(
-                    intent=Intent.GENERATE_TESTCASE,
-                    entities={"selection": selection},
-                    confidence=0.9
-                )
+                return IntentResult(intent=Intent.GENERATE_TESTCASE, entities={"selection": selection}, confidence=0.9)
         
         # Generate all test cases
         if any(kw in message_lower for kw in ["生成测试用例", "写测试用例", "生成用例"]):

@@ -3,7 +3,6 @@
 from typing import Dict, Any, Optional
 from ..llm import BaseLLM, Message, MessageRole, LLMFactory
 from ..knowledge import KnowledgeBase
-from ..models.llm_config import LLMProfile
 from ..services.config_service import ConfigService
 from .session import SessionManager, SessionState
 from .intent_agent import IntentAgent, Intent
@@ -13,6 +12,7 @@ from ..skills.analyze_skill import AnalyzeSkill
 from ..skills.testcase_skill import TestCaseSkill
 from ..skills.export_skill import ExportSkill
 from ..skills.qa_skill import QASkill
+from ..skills.demand_extractor_skill import DemandExtractorSkill
 
 
 class Orchestrator:
@@ -37,6 +37,7 @@ class Orchestrator:
         SkillRegistry.register(TestCaseSkill)
         SkillRegistry.register(ExportSkill)
         SkillRegistry.register(QASkill)
+        SkillRegistry.register(DemandExtractorSkill)
     
     def process(self, user_message: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         session = self.session_manager.get_or_create(session_id)
@@ -62,6 +63,7 @@ class Orchestrator:
         intent_map = {
             Intent.ANALYZE_URL: "analyze",
             Intent.GENERATE_TESTCASE: "gen_testcase",
+            Intent.EXTRACT_DEMAND: "extract_demand",
             Intent.EXPORT: "export",
             Intent.QA: "qa",
             Intent.HELP: "qa",
@@ -73,7 +75,7 @@ class Orchestrator:
             return SkillResult(
                 success=False,
                 error="抱歉，我没有理解你的意思",
-                suggestion="你可以试试：「分析 https://xxx」或「生成测试用例」"
+                suggestion="你可以试试：「分析 https://xxx」或「提取VIP的需求」"
             )
         
         skill = SkillRegistry.get_or_create(
