@@ -1,99 +1,183 @@
-# 智测AI (Testify AI)
-
 <div align="center">
+
+<img src="docs/images/logo.png" alt="智测AI Logo" width="200">
+
+# 智测AI (Testify AI)
 
 **基于多模态大模型的开源自动化测试工具**
 
-**Open-Source Automated Testing Tool Based on Multimodal LLM**
+**Open-Source Automated Testing Tool Powered by Multimodal LLM**
 
-[![Version](https://img.shields.io/badge/version-3.1.0--dev-orange.svg)]()
+[![GitHub stars](https://img.shields.io/github/stars/nandujia/DemandTest?style=social)](https://github.com/nandujia/DemandTest/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/nandujia/DemandTest?style=social)](https://github.com/nandujia/DemandTest/network/members)
+[![GitHub watchers](https://img.shields.io/github/watchers/nandujia/DemandTest?style=social)](https://github.com/nandujia/DemandTest/watchers)
+
+[![Version](https://img.shields.io/badge/version-3.1.0--dev-orange.svg)](https://github.com/nandujia/DemandTest/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11+-yellow.svg)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Python](https://img.shields.io/badge/python-3.11+-yellow.svg)](https://www.python.org/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-[English](#english) | [中文](#中文)
+[![GitHub Issues](https://img.shields.io/github/issues/nandujia/DemandTest)](https://github.com/nandujia/DemandTest/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/nandujia/DemandTest)](https://github.com/nandujia/DemandTest/pulls)
+[![GitHub Contributors](https://img.shields.io/github/contributors/nandujia/DemandTest)](https://github.com/nandujia/DemandTest/graphs/contributors)
+
+[![Test Status](https://github.com/nandujia/DemandTest/workflows/Test%20and%20Lint/badge.svg)](https://github.com/nandujia/DemandTest/actions)
+[![Coverage Status](https://codecov.io/gh/nandujia/DemandTest/branch/main/graph/badge.svg)](https://codecov.io/gh/nandujia/DemandTest)
+
+**[English](#-english-documentation) | [中文](#-中文文档)**
+
+**[🚀 快速开始](#-快速开始) | [📖 文档](#-文档) | [🤝 贡献](#-贡献指南) | [💬 社区](#-社区)**
 
 </div>
 
 ---
 
-<a name="中文"></a>
-## 📖 产品简介
+## 📖 中文文档
 
-**智测AI（Testify AI）** 是一款基于多模态大模型、Agent 智能体与插件化架构构建的开源自动化测试工具，支持原型解析、需求结构化、自动用例生成、多格式导出等全流程能力，为测试工程师提供开箱即用的 AI 辅助工具。
+### 🎯 项目简介
 
-### 🎯 核心能力
+**智测AI（Testify AI）** 是一款基于多模态大模型、Agent 智能体与插件化架构构建的**开源自动化测试工具**。
 
-| 能力 | 说明 |
-|------|------|
-| **原型解析** | 自动解析墨刀、蓝湖、Figma等设计原型，提取页面结构和组件信息 |
-| **需求结构化** | 将原始需求转换为结构化数据，支持智能分析和归类 |
-| **自动用例生成** | 基于AI大模型自动生成测试用例，支持正向、逆向、边界等多种场景 |
-| **多格式导出** | 支持Excel、JSON、Markdown等多种格式导出，对接主流测试管理平台 |
+> 💡 **核心理念**：让AI理解你的需求，自动生成专业的测试用例
+
+**一行命令，从原型到测试用例**：
+
+```bash
+# 分析墨刀原型，自动生成测试用例
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://modao.cc/your-project"}'
+```
 
 ---
 
-## ✨ 产品特性
+### ✨ 核心特性
 
-### 🔍 协议级数据提取
+<table>
+<tr>
+<td width="50%">
 
+#### 🔍 智能原型解析
+- 支持**墨刀、蓝湖、Figma**等主流设计工具
+- 协议级数据提取，绕过Canvas限制
+- 自动识别页面结构、组件、交互逻辑
+
+</td>
+<td width="50%">
+
+#### 🤖 AI测试生成
+- 基于多模态大模型（GLM/GPT/Qwen）
+- 自动生成正向、逆向、边界、异常测试
+- 支持Few-Shot自学习，持续优化
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+#### 📊 结构化输出
+- Pydantic保证**100%可解析**
+- 支持Excel、JSON、Markdown多格式导出
+- 可对接TestRail、Jira等测试管理平台
+
+</td>
+<td width="50%">
+
+#### ⚡ 开箱即用
+- 完整的RESTful API
+- 支持Docker一键部署
+- 插件化架构，易于扩展
+
+</td>
+</tr>
+</table>
+
+---
+
+### 🚀 快速开始
+
+#### 方式一：Docker部署（推荐）
+
+```bash
+# 克隆项目
+git clone https://github.com/nandujia/DemandTest.git
+cd DemandTest
+
+# 启动服务
+docker-compose up -d
+
+# 访问API文档
+open http://localhost:8000/docs
 ```
-传统方案 Traditional:
-  DOM/OCR → 截图识别 → 易出错、Canvas无法解析
 
-智测AI方案 Our Approach:
-  Network Interception → 拦截数据包 → 完美DOM、隐藏字段、内部备注
+#### 方式二：本地开发
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/nandujia/DemandTest.git
+cd DemandTest
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 配置环境变量
+cp .env.example .env
+# 编辑 .env，配置 LLM_API_KEY
+
+# 4. 启动服务
+uvicorn app.main:app --reload --port 8000
 ```
 
-**优势 Advantages:**
-- ✅ 绕过Canvas渲染限制 | Bypass Canvas rendering limitations
-- ✅ 获取隐藏字段和内部备注 | Extract hidden fields and internal notes
-- ✅ 100%数据完整性 | 100% data integrity
-
-### 🤖 结构化LLM输出
+#### 第一个测试用例
 
 ```python
-# Pydantic保证100%可解析
-class TestCase(BaseModel):
-    title: str
-    steps: List[TestCaseStep]
-    expected_result: str
+import requests
+
+# 1. 提交分析任务
+response = requests.post(
+    "http://localhost:8000/api/v1/analyze",
+    json={"url": "https://modao.cc/axbox/share/your-project"}
+)
+task_id = response.json()["task_id"]
+
+# 2. 查询进度
+import time
+while True:
+    status = requests.get(f"http://localhost:8000/api/v1/analyze/{task_id}").json()
+    if status["status"] == "completed":
+        print(f"生成测试用例: {len(status['result']['test_cases'])} 条")
+        break
+    time.sleep(2)
 ```
-
-**优势 Advantages:**
-- ✅ 类型安全 | Type safety
-- ✅ 自动校验 | Automatic validation
-- ✅ 无解析错误 | No parsing errors
-
-### 🧠 影子运行自学习
-
-```
-用户修正 → 记录Prompt+Context → Few-Shot学习库 → 自动优化
-```
-
-**优势 Advantages:**
-- ✅ 记录用户修正 | Record user corrections
-- ✅ 自动检索相似案例 | Auto-retrieve similar cases
-- ✅ 持续质量提升 | Continuous quality improvement
-
-### ⚡ 全链路异步化
-
-```
-API立即响应 → 后台任务执行 → 实时进度跟踪
-```
-
-**优势 Advantages:**
-- ✅ 非阻塞API | Non-blocking API
-- ✅ 实时进度条 | Real-time progress bar
-- ✅ 任务可取消 | Task cancellation
 
 ---
 
-## 🏗️ 技术架构
+### 📊 效果展示
+
+#### 从墨刀原型自动生成测试用例
+
+**输入**：墨刀原型链接（97个页面）
+
+**输出**：完整测试用例Excel文件
+
+| 模块 | 测试用例数 | 覆盖场景 |
+|------|-----------|----------|
+| 登录注册 | 4条 | 正向、逆向、边界 |
+| VIP功能 | 32条 | 功能、安全、性能 |
+| 充值提现 | 12条 | 业务流程、异常 |
+| **总计** | **97+条** | 全面覆盖 |
+
+---
+
+### 🏗️ 技术架构
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      API Layer (FastAPI)                    │
+│                      用户请求                               │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    API Layer (FastAPI)                      │
 │                   立即响应 + 后台任务                         │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -104,8 +188,11 @@ API立即响应 → 后台任务执行 → 实时进度跟踪
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                  Platforms (平台插件)                        │
-│   Modao | Lanhu | Figma | Axure | JSDesign | ...           │
-│         策略模式 - 新增平台只需添加插件                        │
+│   ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
+│   │  Modao   │ │  Lanhu   │ │  Figma   │ │  Axure   │     │
+│   │   ✅     │ │   🚧    │ │   🚧    │ │   📋    │     │
+│   └──────────┘ └──────────┘ └──────────┘ └──────────┘     │
+│         策略模式 - 新增平台只需实现适配器接口                  │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -116,21 +203,23 @@ API立即响应 → 后台任务执行 → 实时进度跟踪
 
 ---
 
-## 📁 项目结构
+### 📁 项目结构
 
 ```
 testify-ai/
 ├── app/
 │   ├── core/                   # 核心模块
-│   │   ├── schema.py          # 数据模型
-│   │   └── engine.py          # 编排引擎
+│   │   ├── schema.py          # 数据模型 (Pydantic)
+│   │   ├── engine.py          # 编排引擎
+│   │   ├── config.py          # 配置管理
+│   │   └── logging_config.py  # 日志系统
 │   │
 │   ├── platforms/              # 平台插件
 │   │   ├── base.py            # 适配器基类
 │   │   ├── registry.py        # 平台注册表
-│   │   ├── modao/             # 墨刀
-│   │   ├── lanhu/             # 蓝湖
-│   │   └── figma/             # Figma
+│   │   ├── modao/             # 墨刀适配器 ✅
+│   │   ├── lanhu/             # 蓝湖适配器 🚧
+│   │   └── figma/             # Figma适配器 🚧
 │   │
 │   ├── adapters/               # 数据嗅探
 │   │   └── sniffer.py         # 网络拦截引擎
@@ -139,71 +228,38 @@ testify-ai/
 │   │   ├── async_tasks.py     # 异步任务管理
 │   │   └── shadow_learning.py # 自学习服务
 │   │
+│   ├── utils/                  # 工具模块
+│   │   └── security.py        # 安全工具
+│   │
 │   ├── llm/                    # LLM适配层
-│   ├── api/                    # API接口
-│   └── main.py                 # 入口
+│   ├── api/                    # RESTful API
+│   └── main.py                 # 应用入口
 │
-├── data/                       # 数据存储
-├── exports/                    # 导出文件
-└── docs/                       # 文档
+├── tests/                      # 单元测试
+├── .github/workflows/          # CI/CD
+├── docs/                       # 文档
+└── exports/                    # 导出文件
 ```
 
 ---
 
-## 🚀 快速开始
+### 📊 支持的平台
 
-### 环境要求
+| 平台 | 状态 | 特性 |
+|------|------|------|
+| **墨刀 Modao** | ✅ 已支持 | 完整页面解析、组件提取 |
+| **蓝湖 Lanhu** | 🚧 开发中 | 设计稿解析 |
+| **Figma** | 🚧 开发中 | 国际化设计工具 |
+| **Axure** | 📋 计划中 | 专业原型工具 |
+| **即时设计** | 📋 计划中 | 国产设计工具 |
 
-- Python 3.11+
-- Node.js 18+ (可选，用于前端)
-
-### 本地开发
-
-```bash
-# 克隆仓库
-git clone https://github.com/nandujia/DemandTest.git
-cd DemandTest
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 配置 LLM_API_KEY
-
-# 启动开发服务器
-uvicorn app.main:app --reload --port 8000
-
-# 访问 API 文档
-# http://localhost:8000/docs
-```
-
-### Docker 部署
-
-```bash
-docker-compose up -d
-# 访问 http://localhost:8000
-```
+**贡献新平台**：只需实现 `BasePlatformAdapter` 接口，详见 [贡献指南](CONTRIBUTING.md)
 
 ---
 
-## 📊 支持的平台
+### 🔌 扩展开发
 
-| 平台 Platform | 状态 Status | 说明 Description |
-|---------------|-------------|------------------|
-| 墨刀 Modao | ✅ 支持中 | 国产原型设计工具 |
-| 蓝湖 Lanhu | 🚧 开发中 | 设计协作平台 |
-| Figma | 🚧 开发中 | 在线设计工具 |
-| Axure | 📋 计划中 | 专业原型工具 |
-| 即时设计 JSDesign | 📋 计划中 | 国产设计工具 |
-
-**新增平台**：只需实现 `BasePlatformAdapter`，无需修改核心代码！
-
----
-
-## 🔌 插件开发
-
-### 创建新平台插件
+#### 添加新平台适配器
 
 ```python
 # app/platforms/myplatform/adapter.py
@@ -237,121 +293,91 @@ PlatformRegistry.register(MyPlatformAdapter)
 
 ---
 
-## 🤝 贡献指南
+### 🗺️ 路线图
+
+- [x] v3.1.0 - 核心架构重构
+  - [x] 插件化平台架构
+  - [x] 协议级数据提取
+  - [x] 异步任务系统
+  - [x] 日志系统
+  - [x] 安全模块
+
+- [ ] v3.2.0 - 平台扩展
+  - [ ] 蓝湖适配器
+  - [ ] Figma适配器
+  - [ ] 自定义平台插件市场
+
+- [ ] v3.3.0 - 智能化增强
+  - [ ] 多模态需求理解
+  - [ ] 自动化测试执行
+  - [ ] 缺陷预测
+
+- [ ] v4.0.0 - 企业级特性
+  - [ ] 团队协作
+  - [ ] 测试报告生成
+  - [ ] CI/CD集成
+
+查看 [完整路线图](https://github.com/nandujia/DemandTest/milestones)
+
+---
+
+### 🤝 贡献指南
 
 我们欢迎所有形式的贡献！
 
-### 协作模式
+**贡献方式**：
+- 🐛 [报告Bug](https://github.com/nandujia/DemandTest/issues/new?template=bug_report.md)
+- 💡 [提出建议](https://github.com/nandujia/DemandTest/issues/new?template=feature_request.md)
+- 📝 改进文档
+- 🔧 提交代码
 
-本项目采用 **Fork + Pull Request** 模式：
-
-```
-主仓库 (main) → 受保护，只接受PR
-     ↑
-  Pull Request (需要审核)
-     ↑
-贡献者的Fork → 开发 → 提交PR
-```
-
-### 如何贡献
+**贡献流程**：
 
 ```bash
-# 1. Fork仓库到你的账户
-
-# 2. 克隆你的Fork
-git clone https://github.com/YOUR_USERNAME/DemandTest.git
-
-# 3. 创建功能分支
+# 1. Fork项目
+# 2. 创建分支
 git checkout -b feature/your-feature
 
-# 4. 提交变更
+# 3. 提交代码
 git commit -m "feat: 添加XXX功能"
 
-# 5. 推送并创建PR
+# 4. 推送并创建PR
 git push origin feature/your-feature
 ```
 
-详细指南请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
+详见 [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 🔐 数据隐私
+### 👥 贡献者
 
-### 数据安全原则
+感谢所有贡献者！
 
-| 原则 | 说明 |
-|------|------|
-| **最小权限** | 仅请求必要的API权限 |
-| **本地存储** | 所有数据存储在本地，不上传云端 |
-| **敏感过滤** | 自动过滤敏感字段（密钥、密码等） |
-| **审计日志** | 记录所有数据访问操作 |
-
-### 数据存储位置
-
-```
-./data/
-├── learning/     # 学习数据（本地）
-├── tasks/        # 任务结果（本地）
-└── sniffed/      # 嗅探数据（本地）
-
-./exports/        # 导出文件（本地）
-```
+<a href="https://github.com/nandujia/DemandTest/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=nandujia/DemandTest" />
+</a>
 
 ---
 
-## 📝 许可证
+### 📄 许可证
 
-[MIT License](LICENSE)
+本项目基于 [MIT License](LICENSE) 开源。
 
 ---
 
-<a name="english"></a>
-## 📖 English Documentation
+### 💬 社区
 
-### Product Overview
+- **GitHub Issues**: [提交问题](https://github.com/nandujia/DemandTest/issues)
+- **GitHub Discussions**: [参与讨论](https://github.com/nandujia/DemandTest/discussions)
+- **Discord**: [加入社区](https://discord.gg/clawd)
 
-**Testify AI** is an open-source automated testing tool built on multimodal LLM, Agent intelligence, and plugin architecture. It supports prototype parsing, requirement structuring, automatic test case generation, and multi-format export, providing out-of-the-box AI assistance for QA engineers.
+---
 
-### Core Capabilities
+### ⭐ Star History
 
-| Capability | Description |
-|------------|-------------|
-| **Prototype Parsing** | Automatically parse design prototypes from Modao, Lanhu, Figma, etc. |
-| **Requirement Structuring** | Convert raw requirements into structured data |
-| **Auto Test Case Generation** | AI-powered test case generation covering positive, negative, boundary scenarios |
-| **Multi-format Export** | Export to Excel, JSON, Markdown and integrate with test management platforms |
+如果这个项目对你有帮助，请给我们一个 ⭐ Star！
 
-### Quick Start
-
-```bash
-# Clone repository
-git clone https://github.com/nandujia/DemandTest.git
-cd DemandTest
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-# Edit .env to configure LLM_API_KEY
-
-# Start development server
-uvicorn app.main:app --reload --port 8000
-```
-
-### Supported Platforms
-
-| Platform | Status | Description |
-|----------|--------|-------------|
-| Modao | ✅ Supported | Chinese prototyping tool |
-| Lanhu | 🚧 In Development | Design collaboration platform |
-| Figma | 🚧 In Development | Online design tool |
-| Axure | 📋 Planned | Professional prototyping tool |
-| JSDesign | 📋 Planned | Chinese design tool |
-
-### License
-
-[MIT License](LICENSE)
+[![Star History Chart](https://api.star-history.com/svg?repos=nandujia/DemandTest&type=Date)](https://star-history.com/#nandujia/DemandTest&Date)
 
 ---
 
@@ -361,6 +387,92 @@ uvicorn app.main:app --reload --port 8000
 
 **智测AI - 让测试更智能**
 
-[GitHub](https://github.com/nandujia/DemandTest) | [Issues](https://github.com/nandujia/DemandTest/issues) | [Discussions](https://github.com/nandujia/DemandTest/discussions)
+**[⭐ Star](https://github.com/nandujia/DemandTest) | [🍴 Fork](https://github.com/nandujia/DemandTest/fork) | [📖 文档](https://github.com/nandujia/DemandTest/wiki)**
+
+</div>
+
+---
+
+## 📖 English Documentation
+
+### 🎯 Overview
+
+**Testify AI** is an **open-source automated testing tool** built on multimodal LLM, Agent intelligence, and plugin architecture.
+
+> 💡 **Core Philosophy**: Let AI understand your requirements and automatically generate professional test cases
+
+**One command from prototype to test cases**:
+
+```bash
+# Analyze Modao prototype, auto-generate test cases
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://modao.cc/your-project"}'
+```
+
+---
+
+### ✨ Core Features
+
+| Feature | Description |
+|---------|-------------|
+| **🔍 Smart Prototype Parsing** | Support Modao, Lanhu, Figma; Protocol-level extraction bypassing Canvas limits |
+| **🤖 AI Test Generation** | Multi-modal LLM (GLM/GPT/Qwen); Auto-generate positive, negative, boundary tests |
+| **📊 Structured Output** | 100% parseable with Pydantic; Export to Excel, JSON, Markdown |
+| **⚡ Ready to Use** | Complete RESTful API; Docker one-click deployment; Plugin architecture |
+
+---
+
+### 🚀 Quick Start
+
+```bash
+# Clone
+git clone https://github.com/nandujia/DemandTest.git
+
+# Docker
+docker-compose up -d
+
+# Or local development
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+---
+
+### 📊 Supported Platforms
+
+| Platform | Status |
+|----------|--------|
+| Modao | ✅ Supported |
+| Lanhu | 🚧 In Development |
+| Figma | 🚧 In Development |
+| Axure | 📋 Planned |
+
+---
+
+### 🗺️ Roadmap
+
+- [x] v3.1.0 - Core architecture refactor
+- [ ] v3.2.0 - Platform expansion (Lanhu, Figma)
+- [ ] v3.3.0 - AI enhancement
+- [ ] v4.0.0 - Enterprise features
+
+---
+
+### 🤝 Contributing
+
+We welcome all contributions! See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+### 📄 License
+
+[MIT License](LICENSE)
+
+---
+
+<div align="center">
+
+**[⭐ Star](https://github.com/nandujia/DemandTest) | [🍴 Fork](https://github.com/nandujia/DemandTest/fork) | [📖 Docs](https://github.com/nandujia/DemandTest/wiki)**
 
 </div>

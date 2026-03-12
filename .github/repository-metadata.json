@@ -1,0 +1,28 @@
+{
+  "name": "智测AI (Testify AI)",
+  "description": "基于多模态大模型的开源自动化测试工具 | Open-Source Automated Testing Tool Powered by Multimodal LLM",
+  "topics": [
+    "testing",
+    "automation",
+    "ai",
+    "llm",
+    "test-automation",
+    "test-generator",
+    "python",
+    "fastapi",
+    "playwright",
+    "modao",
+    "lanhu",
+    "figma",
+    "test-cases",
+    "quality-assurance",
+    "chinese",
+    "open-source",
+    "qa",
+    "software-testing",
+    "multimodal",
+    "agent"
+  ],
+  "homepage": "https://github.com/nandujia/DemandTest",
+  "license": "MIT"
+}
