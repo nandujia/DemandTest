@@ -1,406 +1,497 @@
-# DemandTest Platform - 需求提取与测试用例生成平台
+# DemandTest Platform
 
 <div align="center">
 
-**一款智能测试用例生成平台 - 自然对话驱动**
+**低侵入式产研数据转换器 | Non-Intrusive Product-Research Data Transformer**
 
-分析原型链接 → 生成测试用例 → 导出文件
+**智能测试用例生成平台 | Intelligent Test Case Generation Platform**
 
-[![Version](https://img.shields.io/badge/version-3.0.0--dev-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-3.1.0--dev-orange.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.9+-yellow.svg)]()
+[![Python](https://img.shields.io/badge/python-3.11+-yellow.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+[English](#english) | [中文](#中文)
 
 </div>
 
 ---
 
-## ⚠️ 开发状态说明
+<a name="中文"></a>
+## 📖 中文文档
 
-**当前版本：v3.0.0-dev**
+### ⚠️ 开发状态 | Development Status
 
-### 已完成功能 ✅
+**当前版本 Current Version**: v3.1.0-dev
 
-| 功能 | 状态 | 说明 |
-|------|------|------|
-| 原型目录提取 | ✅ 完成 | 支持97个页面的目录结构提取 |
-| 页面导航 | ✅ 完成 | 点击目录切换页面 |
-| 截图保存 | ✅ 完成 | 页面截图功能 |
-| 多LLM适配 | ✅ 完成 | GLM/GPT/Qwen/ERNIE/自定义模型 |
-| 意图识别 | ✅ 完成 | 规则匹配 + LLM分析 |
-| 技能系统 | ✅ 完成 | 基础技能框架 |
-| 自学习机制 | ✅ 完成 | 错误记录和优化机制 |
-| 会话管理 | ✅ 完成 | 多会话支持 |
+本项目正处于积极开发中，欢迎社区贡献！
 
-### 待解决问题 ❌
-
-| 问题 | 状态 | 说明 |
-|------|------|------|
-| 需求内容提取 | ❌ 未完成 | 墨刀页面使用图片/Canvas渲染，无法直接提取文字内容 |
-| OCR识别 | ❌ 待集成 | 本地OCR工具(PaddleOCR)存在兼容性问题，需要配置API Key |
-
-### 解决方案
-
-**方式1：配置视觉模型API Key**
-```bash
-# 智谱AI (推荐，有免费额度)
-export ZHIPU_API_KEY="your-api-key"
-
-# 或 OpenAI
-export OPENAI_API_KEY="your-api-key"
-```
-
-**方式2：手动提供需求内容**
-用户可直接提供需求文字，系统基于内容生成测试用例。
+This project is under active development. Community contributions are welcome!
 
 ---
 
-## ✨ v3.0 设计目标
+### 🎯 项目定位 | Project Positioning
 
-### 🗣️ 自然对话交互
+**DemandTest 是一款低侵入式产研数据转换器**
 
-像聊天一样使用，无需记忆命令：
-
-```
-用户: 分析这个墨刀链接 https://modao.cc/xxx
-AI: 已分析墨刀原型，提取 97 个页面...
-
-用户: 生成VIP模块的测试用例
-AI: 已为「VIP模块」生成 15 条测试用例...
-
-用户: 导出Excel
-AI: 已导出到 test_cases_20260312.xlsx
-```
-
-### 🤖 智能调度系统
-
-| 模块 | 说明 | 状态 |
-|------|------|------|
-| **Intent Agent** | 意图识别，理解用户想做什么 | ✅ |
-| **Orchestrator** | 调度中心，协调各技能执行 | ✅ |
-| **Skills** | 技能系统，按需调用爬虫/生成/导出 | ✅ |
-
-### 🧠 自我学习优化
-
-- **错误记录**：自动记录执行失败 ✅
-- **用户纠正**：学习用户反馈 ✅
-- **最佳实践**：积累可复用经验 ✅
-- **自动优化**：重复问题自动提示解决方案 ✅
-
-### 🔧 本地化配置
-
-前端可视化配置：
-
-| 配置项 | 说明 |
-|--------|------|
-| 导出路径 | 自定义文件导出目录 |
-| LLM 模型 | 多模型配置、自定义模型 |
-| 知识库 | 启用/禁用、存储路径 |
-| 主题/语言 | 界面个性化 |
-
-### 🌐 多 LLM 支持
-
-| 类型 | 模型 | 状态 |
-|------|------|------|
-| 内置 | GLM / GPT / Qwen / ERNIE | ✅ |
-| 自定义 | Ollama / vLLM / DeepSeek / Moonshot | ✅ |
-| 完全自定义 | 任意 OpenAI 兼容 API | ✅ |
+核心能力 | Core Capabilities:
+1. **精准抓取**各大原型工具底层数据的拦截引擎
+2. **结构化大模型**懂测试逻辑的测试用例生成
+3. **自学习优化**持续改进的Few-Shot系统
 
 ---
 
-## 🚀 快速开始
+### ✨ 核心特性 | Core Features
 
-### Docker 部署
+#### 🔍 协议级数据提取 | Protocol-Level Data Extraction
 
-```bash
-git clone https://github.com/nandujia/DemandTest.git
-cd DemandTest
-docker-compose up -d
-# 访问 http://localhost:8080
+```
+传统方案 Traditional Approach:
+  DOM/OCR → 截图识别 → 易出错、Canvas无法解析
+
+我们的方案 Our Approach:
+  Network Interception → 拦截数据包 → 完美DOM、隐藏字段、内部备注
 ```
 
-### 本地开发
+**优势 | Advantages:**
+- ✅ 绕过Canvas渲染限制 | Bypass Canvas rendering limitations
+- ✅ 获取隐藏字段和内部备注 | Extract hidden fields and internal notes
+- ✅ 100%数据完整性 | 100% data integrity
 
-```bash
-# 安装依赖
-pip install -r requirements.txt
+#### 🤖 结构化LLM输出 | Structured LLM Output
 
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 配置 LLM_API_KEY
+```python
+# Pydantic保证100%可解析
+class TestCase(BaseModel):
+    title: str
+    steps: List[TestCaseStep]
+    expected_result: str
+```
 
-# 运行后端
-uvicorn app.main:app --reload --port 8000
+**优势 | Advantages:**
+- ✅ 类型安全 | Type safety
+- ✅ 自动校验 | Automatic validation
+- ✅ 无解析错误 | No parsing errors
 
-# 前端
-cd frontend
-npm install
-npm run dev
+#### 🧠 影子运行自学习 | Shadow Learning
+
+```
+用户修正 → 记录Prompt+Context → Few-Shot学习库 → 自动优化
+```
+
+**优势 | Advantages:**
+- ✅ 记录用户修正 | Record user corrections
+- ✅ 自动检索相似案例 | Auto-retrieve similar cases
+- ✅ 持续质量提升 | Continuous quality improvement
+
+#### ⚡ 全链路异步化 | Full Async Pipeline
+
+```
+API立即响应 → 后台任务执行 → 实时进度跟踪
+```
+
+**优势 | Advantages:**
+- ✅ 非阻塞API | Non-blocking API
+- ✅ 实时进度条 | Real-time progress bar
+- ✅ 任务可取消 | Task cancellation
+
+---
+
+### 🏗️ 架构设计 | Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      API Layer (FastAPI)                    │
+│                   立即响应 + 后台任务                         │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    Engine (编排引擎)                         │
+│     Extractor → Generator (Few-Shot) → Exporter            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                  Platforms (平台插件)                        │
+│   Modao | Lanhu | Figma | Axure | JSDesign | ...           │
+│         策略模式 - 新增平台只需添加插件                        │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│               Interceptor (数据嗅探引擎)                     │
+│   Network Interception → 原始JSON → 隐藏字段 + 内部备注      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📁 项目结构
+### 📁 项目结构 | Project Structure
 
 ```
 demand-test-platform/
-├── app/                     # 主应用代码
-│   ├── core/               # 核心模块 (v3.0)
-│   │   ├── intent_agent.py # 意图识别
-│   │   ├── orchestrator.py # 调度中心
-│   │   └── session.py      # 会话管理
+├── app/
+│   ├── core/                   # 核心模块
+│   │   ├── schema.py          # 数据模型
+│   │   ├── engine.py          # 编排引擎
+│   │   └── registry.py        # 平台注册表
 │   │
-│   ├── skills/             # 技能系统 (v3.0)
-│   │   ├── base.py         # 技能基类
-│   │   ├── registry.py     # 技能注册表
-│   │   ├── analyze_skill.py
-│   │   ├── demand_extractor_skill.py
-│   │   ├── full_extractor.py
-│   │   ├── testcase_skill.py
-│   │   ├── export_skill.py
-│   │   └── ...
+│   ├── platforms/              # 平台插件
+│   │   ├── base.py            # 适配器基类
+│   │   ├── modao/             # 墨刀
+│   │   ├── lanhu/             # 蓝湖
+│   │   └── figma/             # Figma
 │   │
-│   ├── llm/                # LLM 适配层
-│   │   ├── base.py         # 抽象基类
-│   │   ├── factory.py      # 工厂模式
-│   │   └── custom.py       # 自定义模型
+│   ├── adapters/               # 数据嗅探
+│   │   ├── sniffer.py         # 网络拦截引擎
+│   │   └── base.py            # 适配器基类
 │   │
-│   ├── knowledge/          # 知识库模块
-│   │   ├── rag.py
-│   │   ├── embeddings.py
-│   │   └── vector_store.py
+│   ├── services/               # 服务层
+│   │   ├── async_tasks.py     # 异步任务管理
+│   │   └── shadow_learning.py # 自学习服务
 │   │
-│   ├── services/
-│   │   ├── config_service.py
-│   │   ├── learning_service.py
-│   │   └── crawler/
-│   │
-│   ├── api/
-│   │   ├── chat.py
-│   │   ├── config.py
-│   │   └── learning.py
-│   │
-│   └── models/
-│       └── llm_config.py
+│   ├── llm/                    # LLM适配层
+│   ├── api/                    # API接口
+│   └── main.py                 # 入口
 │
-├── data/                    # 数据存储
-├── exports/                 # 导出目录
-├── uploads/                 # 上传目录
+├── data/                       # 数据存储
+│   ├── learning/              # 学习数据
+│   ├── tasks/                 # 任务结果
+│   └── sniffed/               # 嗅探数据
 │
-├── frontend/                # 前端代码
-├── docs/                    # 文档
-│
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-└── .env.example
+├── exports/                    # 导出文件
+└── docs/                       # 文档
+    ├── REFACTOR_v3.1.md       # 重构方案
+    └── CODE_REVIEW.md         # 代码审查
 ```
 
 ---
 
-## 📖 使用指南
+### 🚀 快速开始 | Quick Start
 
-### 分析原型
-
-```
-用户: 分析这个墨刀链接 https://modao.cc/community/xxx
-```
-
-支持平台：墨刀、蓝湖、Axure、幕客、Figma、即时设计
-
-**当前状态**：
-- ✅ 目录提取：成功提取97个页面名称
-- ❌ 内容提取：待完成（需要OCR支持）
-
-### 生成测试用例
-
-```
-用户: 生成测试用例
-用户: 生成登录模块的测试用例
-用户: 只生成正向和逆向用例
-```
-
-### 导出文件
-
-```
-用户: 导出Excel
-用户: 导出Markdown格式
-```
-
-### 知识库增强
-
-```
-用户: 上传这份需求文档 [文件]
-用户: 根据文档生成登录测试用例
-```
-
----
-
-## 🛠️ API 文档
-
-### 对话接口
-
-```http
-POST /api/v1/chat
-Content-Type: application/json
-
-{
-  "message": "分析 https://modao.cc/xxx",
-  "session_id": "可选"
-}
-```
-
-### LLM 配置
-
-```http
-GET  /api/v1/config/llm/profiles
-POST /api/v1/config/llm/profiles
-PUT  /api/v1/config/llm/profiles/{id}
-DELETE /api/v1/config/llm/profiles/{id}
-POST /api/v1/config/llm/profiles/{id}/test
-```
-
----
-
-## ⚙️ 配置说明
-
-### 环境变量
+#### 本地开发 | Local Development
 
 ```bash
-# LLM 配置
-LLM_API_TYPE=glm              # glm/gpt/qwen/ernie/custom
-LLM_MODEL_NAME=glm-4
-LLM_API_KEY=your-api-key
-LLM_BASE_URL=                 # 自定义 API 地址
+# 克隆仓库 Clone repository
+git clone https://github.com/nandujia/DemandTest.git
+cd DemandTest
 
-# 视觉模型 (用于OCR)
-ZHIPU_API_KEY=                # 智谱AI (GLM-4V)
-OPENAI_API_KEY=               # OpenAI (GPT-4V)
+# 安装依赖 Install dependencies
+pip install -r requirements.txt
 
-# 知识库
-KB_ENABLED=true
-KB_STORAGE_DIR=./data/knowledge
+# 配置环境变量 Configure environment
+cp .env.example .env
+# 编辑 .env 配置 LLM_API_KEY
 
-# 学习系统
-LEARNING_ENABLED=true
-LEARNING_STORAGE_DIR=./data/learning
-
-# 会话
-SESSION_TIMEOUT=3600
+# 启动开发服务器 Start development server
+uvicorn app.main:app --reload --port 8000
 ```
 
-### 自定义 LLM 配置
-
-通过 API 或前端添加自定义模型：
-
-```json
-{
-  "name": "Ollama-Llama3",
-  "base_url": "http://localhost:11434/v1",
-  "model_name": "llama3",
-  "protocol": "openai_compatible",
-  "api_key": ""
-}
-```
-
----
-
-## 🔧 核心技术
-
-### 意图识别流程
-
-```
-用户消息 → 规则匹配（快速）→ LLM 分析（精准）→ 意图结果
-```
-
-### 技能调度流程
-
-```
-意图 → 路由到技能 → 参数验证 → 执行 → 响应生成
-```
-
-### 需求提取流程
-
-```
-原型页面 → Playwright加载 → 目录提取 ✅
-                         → 页面导航 ✅
-                         → 截图保存 ✅
-                         → OCR识别 ❌ (待完成)
-                         → 需求分析 → 用例生成
-```
-
-### 自我学习机制
-
-```
-错误/纠正 → 记录 → 分析 → 最佳实践 → 自动优化
-```
-
----
-
-## 📊 当前性能指标
-
-| 指标 | 数值 | 说明 |
-|------|------|------|
-| 目录提取准确率 | 100% | 97个页面全部识别 |
-| 页面导航成功率 | 100% | 点击切换正常 |
-| 截图成功率 | 100% | 全页面截图正常 |
-| 需求内容提取 | 0% | 待OCR支持 |
-
----
-
-## 🗓️ 开发计划
-
-### v3.0.1 (计划中)
-
-- [ ] 集成视觉模型API进行OCR识别
-- [ ] 支持GLM-4V / GPT-4V视觉模型
-- [ ] 完善需求内容提取流程
-- [ ] 优化测试用例生成质量
-
-### v3.0.2 (计划中)
-
-- [ ] 前端界面开发
-- [ ] 可视化配置面板
-- [ ] 导出路径配置
-- [ ] 多模型切换UI
-
----
-
-## 🤝 贡献
-
-我们欢迎所有形式的贡献！
-
-### 贡献方式
-
-1. **Fork + Pull Request** - 标准开源协作模式
-2. **报告 Bug** - 创建 Issue 描述问题
-3. **提出功能** - 创建 Issue 描述需求
-4. **完善文档** - 修复错别字、补充说明
-
-### 快速开始
+#### Docker部署 | Docker Deployment
 
 ```bash
-# 1. Fork 后克隆
+docker-compose up -d
+# 访问 http://localhost:8000
+```
+
+---
+
+### 🤝 贡献指南 | Contributing
+
+我们欢迎所有形式的贡献！| We welcome all forms of contributions!
+
+#### 协作模式 | Collaboration Model
+
+本项目采用 **Fork + Pull Request** 模式：
+
+```
+你的主仓库 (main) → 受保护，只接受PR
+     ↑
+  Pull Request (需要审核)
+     ↑
+贡献者的Fork仓库 → 开发 → 提交PR
+```
+
+#### 如何贡献 | How to Contribute
+
+```bash
+# 1. Fork仓库到你的账户
+
+# 2. 克隆你的Fork
 git clone https://github.com/YOUR_USERNAME/DemandTest.git
 
-# 2. 创建功能分支
+# 3. 创建功能分支
 git checkout -b feature/your-feature
 
-# 3. 提交变更
+# 4. 提交变更
 git commit -m "feat: 添加XXX功能"
 
-# 4. 推送并发起 PR
+# 5. 推送并创建PR
 git push origin feature/your-feature
 ```
 
-### 详细指南
+详细指南请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
 
-查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解：
-- 分支保护规则
-- 提交信息规范
-- PR 审查流程
-- 代码规范
+---
 
-## 📄 许可证
+### 🔐 数据隐私 | Data Privacy
+
+#### 数据安全原则 | Data Security Principles
+
+| 原则 | 说明 |
+|------|------|
+| **最小权限** | 仅请求必要的API权限 |
+| **本地存储** | 所有数据存储在本地，不上传云端 |
+| **敏感过滤** | 自动过滤敏感字段（密钥、密码等） |
+| **审计日志** | 记录所有数据访问操作 |
+
+#### 数据存储位置 | Data Storage Locations
+
+```
+./data/
+├── learning/     # 学习数据（本地）
+├── tasks/        # 任务结果（本地）
+├── sniffed/      # 嗅探数据（本地）
+└── config/       # 配置文件（本地）
+
+./exports/        # 导出文件（本地）
+```
+
+#### 隐私建议 | Privacy Recommendations
+
+1. **不要提交敏感数据** | Don't commit sensitive data
+   - 添加 `.env` 到 `.gitignore`
+   - 使用环境变量管理API密钥
+
+2. **定期清理数据** | Regularly clean data
+   ```bash
+   rm -rf ./data/sniffed/*
+   rm -rf ./data/tasks/*
+   ```
+
+3. **使用私有仓库** | Use private repositories
+   - 敏感项目建议使用私有Fork
+
+---
+
+### 📊 支持的平台 | Supported Platforms
+
+| 平台 Platform | 状态 Status | 说明 Description |
+|---------------|-------------|------------------|
+| 墨刀 Modao | ✅ 开发中 | 国产原型设计工具 |
+| 蓝湖 Lanhu | 🚧 计划中 | 设计协作平台 |
+| Figma | 🚧 计划中 | 在线设计工具 |
+| Axure | 🚧 计划中 | 专业原型工具 |
+| 即时设计 JSDesign | 🚧 计划中 | 国产设计工具 |
+
+**新增平台**：只需实现 `BasePlatformAdapter`，无需修改核心代码！
+
+---
+
+### 📝 许可证 | License
+
+[MIT License](LICENSE)
+
+---
+
+<a name="english"></a>
+## 📖 English Documentation
+
+### ⚠️ Development Status
+
+**Current Version**: v3.1.0-dev
+
+This project is under active development. Community contributions are welcome!
+
+---
+
+### 🎯 Project Positioning
+
+**DemandTest is a non-intrusive product-research data transformer.**
+
+Core Capabilities:
+1. **Precise interception engine** that captures underlying data from prototyping tools
+2. **Structured LLM** that understands testing logic for test case generation
+3. **Self-learning optimization** with continuous Few-Shot improvements
+
+---
+
+### ✨ Core Features
+
+#### 🔍 Protocol-Level Data Extraction
+
+```
+Traditional Approach:
+  DOM/OCR → Screenshot Recognition → Error-prone, Canvas unparsable
+
+Our Approach:
+  Network Interception → Intercept Data Packets → Perfect DOM, hidden fields, internal notes
+```
+
+**Advantages:**
+- ✅ Bypass Canvas rendering limitations
+- ✅ Extract hidden fields and internal notes
+- ✅ 100% data integrity
+
+#### 🤖 Structured LLM Output
+
+```python
+# Pydantic ensures 100% parseability
+class TestCase(BaseModel):
+    title: str
+    steps: List[TestCaseStep]
+    expected_result: str
+```
+
+**Advantages:**
+- ✅ Type safety
+- ✅ Automatic validation
+- ✅ No parsing errors
+
+#### 🧠 Shadow Learning
+
+```
+User Correction → Record Prompt+Context → Few-Shot Library → Auto Optimization
+```
+
+**Advantages:**
+- ✅ Record user corrections
+- ✅ Auto-retrieve similar cases
+- ✅ Continuous quality improvement
+
+#### ⚡ Full Async Pipeline
+
+```
+Immediate API Response → Background Task Execution → Real-time Progress Tracking
+```
+
+**Advantages:**
+- ✅ Non-blocking API
+- ✅ Real-time progress bar
+- ✅ Task cancellation support
+
+---
+
+### 🚀 Quick Start
+
+#### Local Development
+
+```bash
+# Clone repository
+git clone https://github.com/nandujia/DemandTest.git
+cd DemandTest
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env to configure LLM_API_KEY
+
+# Start development server
+uvicorn app.main:app --reload --port 8000
+```
+
+#### Docker Deployment
+
+```bash
+docker-compose up -d
+# Access at http://localhost:8000
+```
+
+---
+
+### 🤝 Contributing
+
+We welcome all forms of contributions!
+
+#### Collaboration Model
+
+This project uses the **Fork + Pull Request** model:
+
+```
+Your Main Repository (main) → Protected, only accepts PRs
+     ↑
+  Pull Request (requires review)
+     ↑
+Contributor's Fork Repository → Development → Submit PR
+```
+
+#### How to Contribute
+
+```bash
+# 1. Fork the repository to your account
+
+# 2. Clone your fork
+git clone https://github.com/YOUR_USERNAME/DemandTest.git
+
+# 3. Create a feature branch
+git checkout -b feature/your-feature
+
+# 4. Commit changes
+git commit -m "feat: add XXX feature"
+
+# 5. Push and create PR
+git push origin feature/your-feature
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+---
+
+### 🔐 Data Privacy
+
+#### Data Security Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Least Privilege** | Only request necessary API permissions |
+| **Local Storage** | All data stored locally, not uploaded to cloud |
+| **Sensitive Filtering** | Auto-filter sensitive fields (keys, passwords) |
+| **Audit Logging** | Record all data access operations |
+
+#### Data Storage Locations
+
+```
+./data/
+├── learning/     # Learning data (local)
+├── tasks/        # Task results (local)
+├── sniffed/      # Sniffed data (local)
+└── config/       # Configuration (local)
+
+./exports/        # Export files (local)
+```
+
+#### Privacy Recommendations
+
+1. **Don't commit sensitive data**
+   - Add `.env` to `.gitignore`
+   - Use environment variables for API keys
+
+2. **Regularly clean data**
+   ```bash
+   rm -rf ./data/sniffed/*
+   rm -rf ./data/tasks/*
+   ```
+
+3. **Use private repositories**
+   - For sensitive projects, use a private fork
+
+---
+
+### 📊 Supported Platforms
+
+| Platform | Status | Description |
+|----------|--------|-------------|
+| Modao | ✅ In Development | Chinese prototyping tool |
+| Lanhu | 🚧 Planned | Design collaboration platform |
+| Figma | 🚧 Planned | Online design tool |
+| Axure | 🚧 Planned | Professional prototyping tool |
+| JSDesign | 🚧 Planned | Chinese design tool |
+
+**Adding Platforms**: Simply implement `BasePlatformAdapter`, no core code changes needed!
+
+---
+
+### 📝 License
 
 [MIT License](LICENSE)
 
@@ -408,8 +499,8 @@ git push origin feature/your-feature
 
 <div align="center">
 
-**v3.0.0-dev** | Made with ❤️ by nandujia
+**Made with ❤️ by DemandTest Team**
 
-需求提取功能开发中，欢迎贡献代码或提供建议！
+[GitHub](https://github.com/nandujia/DemandTest) | [Issues](https://github.com/nandujia/DemandTest/issues) | [Discussions](https://github.com/nandujia/DemandTest/discussions)
 
 </div>
