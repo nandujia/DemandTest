@@ -101,7 +101,7 @@ class BasePlatformAdapter(ABC):
         """
         pass
     
-    async def extract(self, url: str) -> ExtractionResult:
+    async def extract(self, url: str, storage_state: Optional[str] = None) -> ExtractionResult:
         """
         执行提取流程
         Execute extraction workflow
@@ -133,21 +133,8 @@ class BasePlatformAdapter(ABC):
             logger.info(f"[INFO] Registered {len(self.sniffer.patterns)} sniffing patterns")
             
             # Step 2: 执行嗅探
-            sniff_result = await self.sniffer.sniff(url, platform=self.info.name)
-            
-            # Step 3: 重建SniffedData对象
-            self._cached_data = []
-            for source, items in sniff_result.get("data_sources", {}).items():
-                for item in items:
-                    self._cached_data.append(SniffedData(
-                        url=item["url"],
-                        method="GET",
-                        status=item["status"],
-                        headers={},
-                        body=item.get("body"),
-                        source=source,
-                        parsed=item.get("parsed")
-                    ))
+            sniff_result = await self.sniffer.sniff(url, platform=self.info.name, storage_state=storage_state)
+            self._cached_data = list(self.sniffer.sniffed_data)
             
             # Step 4: 解析数据
             if sniff_result.get("sniffed_count", 0) > 0:
@@ -156,6 +143,20 @@ class BasePlatformAdapter(ABC):
                 nodes = []
                 logger.info(f"[WARN] 未拦截到任何数据包")
                 logger.info(f"[WARN] No data packets intercepted")
+            
+            error = None
+            if not nodes:
+                auth_error = None
+                for pkt in self._cached_data:
+                    if pkt.status in (401, 403) and isinstance(pkt.body, dict):
+                        error_type = pkt.body.get("error_type")
+                        if error_type:
+                            auth_error = f"鉴权失败: {error_type}"
+                            break
+                if auth_error:
+                    error = f"{auth_error}。该链接可能需要登录态 Cookie；可通过配置 PLAYWRIGHT_STORAGE_STATE 复用登录态。"
+                else:
+                    error = "未提取到数据 / No data extracted"
             
             # Step 5: 返回结果
             elapsed = (datetime.now() - start_time).total_seconds()
@@ -172,7 +173,7 @@ class BasePlatformAdapter(ABC):
                 pages=nodes,
                 total_elements=sum(len(n.elements) for n in nodes),
                 success=len(nodes) > 0,
-                error=None if nodes else "未提取到数据 / No data extracted"
+                error=error
             )
             
         except Exception as e:

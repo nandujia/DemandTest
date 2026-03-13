@@ -7,12 +7,14 @@ import asyncio
 import json
 import re
 import logging
+import zlib
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
 from playwright.async_api import async_playwright, Page, Response, Route, Request
+from app.core.config import settings
 
 # 获取日志器
 logger = logging.getLogger(__name__)
@@ -63,18 +65,22 @@ class DataSniffer:
         self.page_structures: List[PageStructure] = []
         
         # 数据包匹配规则
-        self.patterns: Dict[str, re.Pattern] = {}
+        self.patterns: Dict[str, List[re.Pattern]] = {}
         
     def register_pattern(self, name: str, pattern: str):
         """注册数据包匹配规则"""
-        self.patterns[name] = re.compile(pattern, re.IGNORECASE)
+        if name not in self.patterns:
+            self.patterns[name] = []
+        self.patterns[name].append(re.compile(pattern, re.IGNORECASE))
         
     def _match_patterns(self, url: str) -> List[str]:
         """匹配URL的所有规则"""
         matches = []
-        for name, pattern in self.patterns.items():
-            if pattern.search(url):
-                matches.append(name)
+        for name, pattern_list in self.patterns.items():
+            for pattern in pattern_list:
+                if pattern.search(url):
+                    matches.append(name)
+                    break
         return matches
     
     async def create_interceptor(self) -> Callable:
@@ -95,14 +101,20 @@ class DataSniffer:
                     # 继续请求
                     response = await route.fetch()
                     
-                    # 检查编码，跳过 deflate（Playwright解压有bug）
                     content_encoding = response.headers.get('content-encoding', '')
+                    raw = await response.body()
                     if 'deflate' in content_encoding.lower():
-                        logger.debug(f"    [跳过] deflate编码，等待浏览器处理")
-                        await route.continue_()
-                        return
-                    
-                    body = await response.text()
+                        decompressed: Optional[bytes] = None
+                        try:
+                            decompressed = zlib.decompress(raw)
+                        except Exception:
+                            try:
+                                decompressed = zlib.decompress(raw, -zlib.MAX_WBITS)
+                            except Exception:
+                                decompressed = None
+                        body = (decompressed or b"").decode("utf-8", errors="ignore")
+                    else:
+                        body = await response.text()
                     
                     # 尝试解析JSON
                     try:
@@ -127,7 +139,7 @@ class DataSniffer:
                     self.sniffed_data.append(sniffed)
                     
                     # 完成请求
-                    await route.fulfill(response=response, body=body)
+                    await route.fulfill(response=response, body=raw)
                     
                 except Exception as e:
                     # 遇到错误时继续请求，不要阻塞
@@ -187,7 +199,12 @@ class DataSniffer:
         extract_keys(body)
         return parsed
     
-    async def sniff(self, url: str, platform: str = "auto") -> Dict[str, Any]:
+    async def sniff(
+        self,
+        url: str,
+        platform: str = "auto",
+        storage_state: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         执行嗅探
         
@@ -202,21 +219,30 @@ class DataSniffer:
         logger.info(f"开始数据嗅探")
         logger.info(f"URL: {url}")
         logger.info(f"{'='*60}\n")
+
+        self.sniffed_data = []
+        self.page_structures = []
         
-        # 根据平台设置匹配规则
-        if platform == "auto":
-            platform = self._detect_platform(url)
-        
-        self._setup_platform_patterns(platform)
+        if not self.patterns:
+            if platform == "auto":
+                platform = self._detect_platform(url)
+            self._setup_platform_patterns(platform)
         
         # 创建拦截器
         interceptor = await self.create_interceptor()
         
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(
-                viewport={"width": 1920, "height": 1080}
-            )
+            browser = await p.chromium.launch(headless=settings.CRAWLER_HEADLESS)
+            state_path = storage_state or settings.PLAYWRIGHT_STORAGE_STATE
+            if state_path:
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    storage_state=state_path
+                )
+            else:
+                context = await browser.new_context(
+                    viewport={"width": 1920, "height": 1080}
+                )
             
             # 注册路由拦截
             await context.route("**/*", interceptor)

@@ -13,10 +13,12 @@ Modao is a Chinese prototyping tool, similar to Axure.
 
 import re
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
+
+import httpx
 
 from app.platforms.base import BasePlatformAdapter, PlatformInfo
-from app.core.schema import RequirementNode, UIElement, ElementType
+from app.core.schema import RequirementNode, UIElement, ElementType, ExtractionResult
 from app.adapters.sniffer import SniffedData
 
 
@@ -37,6 +39,27 @@ class ModaoAdapter(BasePlatformAdapter):
     def match(self, url: str) -> bool:
         """检查URL是否为墨刀平台"""
         return any(pattern in url for pattern in self.info.url_patterns)
+
+    async def extract(self, url: str, storage_state: Optional[str] = None):
+        preflight_error = await self._preflight_error(url)
+        if preflight_error:
+            return ExtractionResult(
+                platform=self.info.name,
+                url=url,
+                pages=[],
+                total_elements=0,
+                success=False,
+                error=preflight_error
+            )
+
+        result = await super().extract(url, storage_state=storage_state)
+        if result.success:
+            return result
+
+        cached = self.get_cached_data()
+        if self._looks_like_deleted_or_missing(cached):
+            result.error = "墨刀链接无效：找不到文件或已被删除，请联系分享者重新生成分享链接。"
+        return result
     
     def get_sniff_patterns(self) -> Dict[str, List[str]]:
         """
@@ -56,10 +79,11 @@ class ModaoAdapter(BasePlatformAdapter):
             ],
             # API接口
             "api": [
-                "/api/pages",
-                "/api/workspace",
-                "/api/project",
-                "/api/design",
+                "/api/",
+                "/api/upper/",
+                "/api/upper/web_v1/design/init",
+                "design/init",
+                "init2403",
             ],
             # 站点地图
             "sitemap": [
@@ -70,6 +94,7 @@ class ModaoAdapter(BasePlatformAdapter):
             # Axure数据
             "axdata": [
                 "axdata.modao",
+                "/go/v1/axfile/axdata",
                 "start.html",
                 "vip.html"
             ]
@@ -90,17 +115,18 @@ class ModaoAdapter(BasePlatformAdapter):
         """
         nodes = []
         seen_page_ids = set()
+        meta, fallback_doc = self._collect_axdata_meta(sniffed_data)
         
         for data in sniffed_data:
             if data.source == "document_js":
                 # 解析document.js
-                parsed_nodes = await self._parse_document_js(data)
+                parsed_nodes = await self._parse_document_js(data, meta=meta)
                 for node in parsed_nodes:
                     if node.page_id not in seen_page_ids:
                         nodes.append(node)
                         seen_page_ids.add(node.page_id)
             
-            elif data.source == "api":
+            elif data.source in ("api", "workspace", "json_api", "data_endpoint"):
                 # 解析API数据
                 parsed_nodes = await self._parse_api_data(data)
                 for node in parsed_nodes:
@@ -115,10 +141,69 @@ class ModaoAdapter(BasePlatformAdapter):
                     if node.page_id not in seen_page_ids:
                         nodes.append(node)
                         seen_page_ids.add(node.page_id)
+            elif data.source == "axdata":
+                if isinstance(data.body, str) and "document.js" in (data.url or ""):
+                    parsed_nodes = await self._parse_document_js(data, meta=meta)
+                    for node in parsed_nodes:
+                        if node.page_id not in seen_page_ids:
+                            nodes.append(node)
+                            seen_page_ids.add(node.page_id)
         
+        if not nodes and fallback_doc:
+            parsed_nodes = self._parse_document_js_content(fallback_doc, url=meta.get("document_url") or "")
+            for node in parsed_nodes:
+                if node.page_id not in seen_page_ids:
+                    nodes.append(node)
+                    seen_page_ids.add(node.page_id)
+
+        if not nodes and meta.get("document_url"):
+            fetched = await self._fetch_document_js(str(meta["document_url"]))
+            if fetched:
+                parsed_nodes = self._parse_document_js_content(fetched, url=str(meta["document_url"]))
+                for node in parsed_nodes:
+                    if node.page_id not in seen_page_ids:
+                        nodes.append(node)
+                        seen_page_ids.add(node.page_id)
+
         return nodes
+
+    def _looks_like_deleted_or_missing(self, cached: List[SniffedData]) -> bool:
+        for pkt in cached:
+            if pkt.status == 404:
+                return True
+            if isinstance(pkt.body, str):
+                if "找不到文件" in pkt.body:
+                    return True
+                if "文件可能已被删除" in pkt.body:
+                    return True
+                if "page not found" in pkt.body.lower():
+                    return True
+            if isinstance(pkt.body, dict):
+                msg = pkt.body.get("message") or pkt.body.get("msg") or ""
+                if isinstance(msg, str) and ("找不到文件" in msg or "删除" in msg):
+                    return True
+        return False
+
+    async def _preflight_error(self, url: str) -> Optional[str]:
+        try:
+            async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+                r = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        except Exception:
+            return None
+
+        if r.status_code == 404:
+            return "墨刀链接无效：找不到文件或已被删除，请联系分享者重新生成分享链接。"
+
+        ct = (r.headers.get("content-type") or "").lower()
+        if "text/html" not in ct:
+            return None
+
+        text = r.text or ""
+        if "找不到文件" in text or "文件可能已被删除" in text:
+            return "墨刀链接无效：找不到文件或已被删除，请联系分享者重新生成分享链接。"
+        return None
     
-    async def _parse_document_js(self, data: SniffedData) -> List[RequirementNode]:
+    async def _parse_document_js(self, data: SniffedData, meta: Optional[Dict[str, Any]] = None) -> List[RequirementNode]:
         """
         解析document.js文件
         Parse document.js file
@@ -130,33 +215,166 @@ class ModaoAdapter(BasePlatformAdapter):
         if not isinstance(data.body, str):
             return []
         
-        nodes = []
-        content = data.body
-        
-        # 提取变量定义
-        variables = {}
+        nodes = self._parse_document_js_content(data.body, url=data.url or "")
+        if meta:
+            for n in nodes:
+                n.raw_data = {**(n.raw_data or {}), "modao_meta": meta}
+        return nodes
+
+    def _collect_axdata_meta(self, sniffed_data: List[SniffedData]) -> Tuple[Dict[str, Any], Optional[str]]:
+        meta: Dict[str, Any] = {}
+        doc_candidates: List[SniffedData] = []
+
+        for d in sniffed_data:
+            if d.source != "axdata":
+                continue
+
+            if isinstance(d.body, dict) and ("page_count" in d.body or "project_cid" in d.body):
+                meta["axdata"] = d.body
+                meta["axdata_url"] = d.url
+
+            if isinstance(d.body, dict) and isinstance(d.body.get("token"), str) and d.body.get("token"):
+                meta["file_id"] = d.body["token"]
+                meta["token_url"] = d.url
+
+            if isinstance(d.url, str):
+                m = re.search(r"/go/v1/axfile/files/([^/]+)/start\.html", d.url)
+                if m:
+                    meta["file_id"] = m.group(1)
+                    meta["start_url"] = d.url
+
+            if isinstance(d.body, str) and "document.js" in (d.url or ""):
+                doc_candidates.append(d)
+
+        if "file_id" in meta and "document_url" not in meta:
+            meta["document_url"] = f"https://axdata.modao.ink/go/v1/axfile/files/{meta['file_id']}/data/document.js"
+
+        if doc_candidates:
+            doc_candidates.sort(key=lambda x: len(x.body) if isinstance(x.body, str) else 0, reverse=True)
+            return meta, doc_candidates[0].body if isinstance(doc_candidates[0].body, str) else None
+
+        return meta, None
+
+    async def _fetch_document_js(self, url: str) -> Optional[str]:
+        try:
+            async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+                r = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        except Exception:
+            return None
+
+        if r.status_code != 200:
+            return None
+        return r.text or None
+
+    def _parse_document_js_content(self, content: str, url: str = "") -> List[RequirementNode]:
+        variables: Dict[str, str] = {}
         for match in re.finditer(r'([a-zA-Z_][a-zA-Z0-9_]*)="([^"]*)"', content):
             variables[match.group(1)] = match.group(2)
-        
-        # 解析页面名称
-        # 通常格式: _(id_var, u, name_var, ...)
-        # 其中name_var对应variables中的页面名称
-        
-        # 查找所有可能的页面名称
-        for var_name, value in variables.items():
-            # 过滤掉明显不是页面名称的变量
-            if len(value) > 1 and len(value) < 50 and not value.startswith("http"):
-                # 检查是否包含中文（墨刀页面名通常是中文）
-                if re.search(r'[\u4e00-\u9fa5]', value):
-                    node = RequirementNode(
-                        id=f"modao_{var_name}",
-                        name=value,
-                        page_id=var_name,
-                        url=data.url
+
+        sitemap = self._extract_sitemap_array(content)
+        if not sitemap:
+            return []
+
+        items = self._parse_node_array(sitemap, variables)
+        pages: List[RequirementNode] = []
+
+        def walk(node: Dict[str, Any]):
+            if not isinstance(node, dict):
+                return
+            if not node.get("is_folder"):
+                page_id = (node.get("page_id") or "").strip()
+                page_name = (node.get("name") or "").strip()
+                if page_id and page_name:
+                    pages.append(
+                        RequirementNode(
+                            id=f"modao_{page_id}",
+                            name=page_name,
+                            page_id=page_id,
+                            url=url,
+                            raw_data=node
+                        )
                     )
-                    nodes.append(node)
-        
+            children = node.get("children") or []
+            if isinstance(children, list):
+                for c in children:
+                    walk(c)
+
+        for item in items:
+            walk(item)
+
+        return pages
+
+    def _extract_sitemap_array(self, content: str) -> Optional[str]:
+        idx = content.find("r,[")
+        if idx == -1:
+            return None
+
+        j = idx + 2
+        bracket_count = 0
+        start = j
+        while j < len(content):
+            c = content[j]
+            if c == "[":
+                bracket_count += 1
+            elif c == "]":
+                bracket_count -= 1
+                if bracket_count == 0:
+                    return content[start : j + 1]
+            j += 1
+        return None
+
+    def _parse_node_array(self, s: str, variables: Dict[str, str]) -> List[Dict[str, Any]]:
+        nodes: List[Dict[str, Any]] = []
+        i = 0
+        while i < len(s):
+            if s[i : i + 4] != "_(s,":
+                i += 1
+                continue
+
+            bracket_count = 0
+            j = i
+            while j < len(s):
+                c = s[j]
+                if c == "(":
+                    bracket_count += 1
+                elif c == ")":
+                    bracket_count -= 1
+                    if bracket_count == 0:
+                        break
+                j += 1
+
+            node_str = s[i + 2 : j]
+            node = self._parse_node(node_str, variables)
+            if node:
+                nodes.append(node)
+            i = j + 1
         return nodes
+
+    def _parse_node(self, node_str: str, variables: Dict[str, str]) -> Optional[Dict[str, Any]]:
+        match = re.match(r"s,([^,]+),u,([^,]+)", node_str)
+        if not match:
+            return None
+
+        id_var = match.group(1)
+        name_var = match.group(2)
+
+        page_id = variables.get(id_var, id_var)
+        page_name = variables.get(name_var, "")
+        if not page_name:
+            return None
+
+        children: List[Dict[str, Any]] = []
+        children_match = re.search(r"A,\[(.+)\]$", node_str)
+        if children_match:
+            children = self._parse_node_array(children_match.group(1), variables)
+
+        is_folder = ",cW," in node_str
+        return {
+            "page_id": page_id,
+            "name": page_name,
+            "is_folder": is_folder,
+            "children": children
+        }
     
     async def _parse_api_data(self, data: SniffedData) -> List[RequirementNode]:
         """解析API返回的JSON数据"""

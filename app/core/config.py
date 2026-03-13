@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     CRAWLER_TIMEOUT: int = 60
     CRAWLER_HEADLESS: bool = True
     PAGE_LOAD_TIMEOUT_MS: int = 3000
+    PLAYWRIGHT_STORAGE_STATE: Optional[str] = None
     
     # LLM配置
     LLM_API_TYPE: str = "glm"
@@ -58,6 +59,12 @@ class Settings(BaseSettings):
     # 会话配置
     SESSION_TIMEOUT: int = 3600
     SESSION_MAX_HISTORY: int = 50
+
+    # 账号与鉴权
+    AUTH_SECRET_KEY: str = "dev-secret-change-me"
+    AUTH_TOKEN_EXPIRE_SECONDS: int = 7 * 24 * 3600
+    AUTH_ALLOW_TEST_DEFAULT_PASSWORD: bool = True
+    AUTH_TEST_DEFAULT_PASSWORD: str = "123456"
     
     # CORS配置
     CORS_ORIGINS: List[str] = Field(

@@ -101,6 +101,23 @@ class TestEngine:
         assert response["url"] == "https://example.com"
         assert response["platform"] == "modao"
 
+    @pytest.mark.asyncio
+    async def test_generate_filter_by_page_id(self):
+        engine = Engine(llm=MagicMock(), use_shadow_learning=False)
+        engine._generate_test_cases = AsyncMock(return_value=[
+            TestCase(id="TC_001", title="t", expected_result="ok")
+        ])
+
+        p1 = RequirementNode(id="modao_a", name="A", page_id="a")
+        p2 = RequirementNode(id="modao_b", name="B", page_id="b")
+        extraction = ExtractionResult(platform="modao", url="u", success=True, pages=[p1, p2])
+
+        out = await engine.generate(extraction, selected_pages=["modao_b"])
+
+        assert len(out) == 1
+        assert engine._generate_test_cases.await_count == 1
+        engine._generate_test_cases.assert_awaited_with(p2)
+
 
 class TestExtractionResult:
     """测试提取结果"""

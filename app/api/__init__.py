@@ -5,6 +5,6 @@ API模块 | API Module
 Provides RESTful API interfaces.
 """
 
-from . import analyze
+from . import analyze, auth, admin
 
-__all__ = ["analyze"]
+__all__ = ["analyze", "auth", "admin"]

@@ -14,6 +14,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import asyncio
 import logging
+import inspect
+import json
+import re
 
 from app.core.schema import (
     ExtractionResult,
@@ -25,7 +28,7 @@ from app.platforms.registry import PlatformRegistry
 from app.adapters.sniffer import DataSniffer
 from app.services.shadow_learning import get_shadow_learning
 from app.services.async_tasks import get_task_manager
-from app.llm import BaseLLM, LLMFactory
+from app.model.base import BaseModelClient
 
 # 获取日志器
 logger = logging.getLogger(__name__)
@@ -78,7 +81,7 @@ class Engine:
     
     def __init__(
         self,
-        llm: Optional[BaseLLM] = None,
+        llm: Optional[BaseModelClient] = None,
         use_shadow_learning: bool = True
     ):
         self.llm = llm
@@ -172,6 +175,35 @@ class Engine:
         
         return self._build_response(ctx)
     
+    async def generate(
+        self,
+        extraction_result: ExtractionResult,
+        selected_pages: Optional[List[str]] = None
+    ) -> List[TestCase]:
+        """
+        仅执行用例生成
+        Execute test case generation only
+        """
+        all_cases = []
+        
+        for page in extraction_result.pages:
+            # 过滤指定页面
+            if selected_pages and (page.name not in selected_pages and page.id not in selected_pages):
+                continue
+            
+            # 生成测试用例
+            cases = await self._generate_test_cases(page)
+            all_cases.extend(cases)
+            
+        return all_cases
+
+    async def export_only(self, test_cases: List[TestCase]) -> str:
+        """
+        仅执行导出
+        Execute export only
+        """
+        return await self._export(test_cases)
+
     async def _extract(self, url: str) -> ExtractionResult:
         """
         数据提取阶段
@@ -206,23 +238,25 @@ class Engine:
         Uses LLM to generate test cases with Few-Shot learning.
         """
         if not self.llm:
-            return []
+            return self._fallback_test_cases(requirement)
         
-        # 构建Prompt
-        prompt = f"""分析以下需求并生成测试用例：
+        prompt = f"""你是专业的测试工程师。请针对下面的页面需求生成测试用例，并严格按 JSON 输出。
 
 {requirement.to_prompt_text()}
 
-请生成测试用例，覆盖：
-1. 正向测试：正常业务流程
-2. 逆向测试：异常输入、权限不足
-3. 边界测试：临界值、边界条件
-4. 异常测试：网络异常、系统错误
-
 要求：
-- 每个用例包含：标题、前置条件、操作步骤、预期结果
-- 使用中文
-- 步骤清晰具体
+- 输出必须是 JSON 数组，每个元素为一个测试用例对象
+- 不要输出除 JSON 之外的任何文字
+
+每个测试用例对象字段：
+- title: string
+- priority: one of ["P0","P1","P2","P3"]
+- type: one of ["positive","negative","boundary","exception","security"]
+- preconditions: string[]
+- steps: [{ "order": number, "action": string, "expected": string }]
+- expected_result: string
+
+请至少生成 4 条用例，覆盖：正向、逆向、边界、异常/安全。
 """
         
         # 使用影子学习增强Prompt
@@ -234,21 +268,74 @@ class Engine:
         
         # 调用LLM生成
         try:
-            from app.llm import Message, MessageRole
+            from app.model import Message, MessageRole
             
             response = await self.llm.achat([
-                Message(role=MessageRole.SYSTEM, content="你是专业的测试工程师，擅长编写测试用例。"),
-                Message(role=MessageRole.USER, content=prompt)
+                Message(role=MessageRole.SYSTEM, content="You are a senior QA engineer."),
+                Message(role=MessageRole.USER, content=prompt),
             ])
             
-            # 解析响应（简化版，实际应使用结构化输出）
             cases = self._parse_test_cases(response, requirement)
             
             return cases
             
         except Exception as e:
             logger.info(f"[Engine] 生成失败: {e}")
-            return []
+            return self._fallback_test_cases(requirement)
+
+    def _fallback_test_cases(self, requirement: RequirementNode) -> List[TestCase]:
+        from app.core.schema import TestCaseStep
+        return [
+            TestCase(
+                id=f"TC_{requirement.id}_F001",
+                title=f"正向-{requirement.name}-基础流程",
+                module=requirement.name,
+                priority="P1",
+                type="positive",
+                preconditions=[],
+                steps=[
+                    TestCaseStep(order=1, action="进入页面", expected="页面正常打开"),
+                    TestCaseStep(order=2, action="按页面提示完成操作", expected="操作成功并有正确反馈"),
+                ],
+                expected_result="页面核心功能可用"
+            ),
+            TestCase(
+                id=f"TC_{requirement.id}_F002",
+                title=f"逆向-{requirement.name}-必填/校验",
+                module=requirement.name,
+                priority="P1",
+                type="negative",
+                preconditions=[],
+                steps=[
+                    TestCaseStep(order=1, action="输入非法/缺失数据并提交", expected="出现明确校验提示"),
+                ],
+                expected_result="校验与提示符合预期"
+            ),
+            TestCase(
+                id=f"TC_{requirement.id}_F003",
+                title=f"边界-{requirement.name}-输入边界",
+                module=requirement.name,
+                priority="P2",
+                type="boundary",
+                preconditions=[],
+                steps=[
+                    TestCaseStep(order=1, action="使用最小/最大长度边界值输入并提交", expected="系统处理正确"),
+                ],
+                expected_result="边界输入处理正确"
+            ),
+            TestCase(
+                id=f"TC_{requirement.id}_F004",
+                title=f"异常-{requirement.name}-网络/接口异常",
+                module=requirement.name,
+                priority="P2",
+                type="exception",
+                preconditions=[],
+                steps=[
+                    TestCaseStep(order=1, action="模拟接口失败或超时", expected="页面给出可理解的错误与重试入口"),
+                ],
+                expected_result="异常场景可感知且可恢复"
+            ),
+        ]
     
     def _parse_test_cases(
         self,
@@ -261,24 +348,102 @@ class Engine:
         
         TODO: 使用Pydantic结构化输出确保100%可解析
         """
-        # 简化实现：生成基础用例
-        cases = [
+        from app.core.schema import TestCaseStep
+
+        from app.core.schema import TestCaseStep
+
+        if not response:
+            response = ""
+
+        raw = response.strip()
+        m = re.search(r"```json\s*([\s\S]*?)```", raw, re.IGNORECASE)
+        if m:
+            raw = m.group(1).strip()
+
+        data = None
+        list_start = raw.find("[")
+        list_end = raw.rfind("]")
+        if list_start != -1 and list_end != -1 and list_end > list_start:
+            try:
+                data = json.loads(raw[list_start:list_end + 1])
+            except Exception:
+                data = None
+        if data is None:
+            obj_start = raw.find("{")
+            obj_end = raw.rfind("}")
+            if obj_start != -1 and obj_end != -1 and obj_end > obj_start:
+                try:
+                    data = json.loads(raw[obj_start:obj_end + 1])
+                except Exception:
+                    data = None
+
+        if isinstance(data, dict) and isinstance(data.get("test_cases"), list):
+            data = data["test_cases"]
+
+        if not isinstance(data, list):
+            data = []
+
+        cases: List[TestCase] = []
+        for idx, item in enumerate(data, start=1):
+            if not isinstance(item, dict):
+                continue
+
+            steps: List[TestCaseStep] = []
+            raw_steps = item.get("steps") or []
+            if isinstance(raw_steps, list):
+                for s in raw_steps:
+                    if isinstance(s, dict):
+                        try:
+                            steps.append(TestCaseStep(
+                                order=int(s.get("order", len(steps) + 1)),
+                                action=str(s.get("action", "")).strip(),
+                                expected=str(s.get("expected", "")).strip() if s.get("expected") is not None else None
+                            ))
+                        except Exception:
+                            continue
+
+            title = str(item.get("title") or "").strip()
+            expected_result = str(item.get("expected_result") or "").strip()
+            if not title or not expected_result:
+                continue
+
+            cases.append(TestCase(
+                id=f"TC_{requirement.id}_{idx:03d}",
+                title=title,
+                module=requirement.name,
+                priority=item.get("priority") or "P2",
+                type=item.get("type") or "positive",
+                preconditions=item.get("preconditions") if isinstance(item.get("preconditions"), list) else [],
+                steps=steps,
+                expected_result=expected_result
+            ))
+
+        if cases:
+            return cases
+
+        return [
             TestCase(
                 id=f"TC_{requirement.id}_001",
                 title=f"正向-{requirement.name}功能验证",
                 module=requirement.name,
-                expected_result="功能正常工作"
+                expected_result="功能正常工作",
+                steps=[
+                    TestCaseStep(order=1, action=f"进入{requirement.name}页面", expected="页面加载成功"),
+                    TestCaseStep(order=2, action="执行核心操作", expected="操作成功完成")
+                ]
             ),
             TestCase(
                 id=f"TC_{requirement.id}_002",
                 title=f"逆向-{requirement.name}异常输入",
                 module=requirement.name,
                 type="negative",
-                expected_result="正确处理异常"
+                expected_result="正确处理异常",
+                steps=[
+                    TestCaseStep(order=1, action=f"进入{requirement.name}页面", expected="页面加载成功"),
+                    TestCaseStep(order=2, action="输入非法数据并提交", expected="提示错误且提交失败")
+                ]
             )
         ]
-        
-        return cases
     
     async def _export(self, test_cases: List[TestCase]) -> str:
         """
@@ -339,13 +504,15 @@ class Engine:
         
         if ctx.progress_callback:
             try:
-                await ctx.progress_callback({
+                result = ctx.progress_callback({
                     "state": state.value,
                     "current": current,
                     "total": total,
                     "percentage": round(current / total * 100, 1) if total > 0 else 0,
                     "message": message
                 })
+                if inspect.isawaitable(result):
+                    await result
             except Exception as e:
                 logger.warning(f"Progress callback failed: {e}")
         
@@ -373,7 +540,7 @@ class Engine:
             "elapsed_seconds": round(elapsed, 2)
         }
     
-    async def extract_only(self, url: str) -> ExtractionResult:
+    async def extract_only(self, url: str, storage_state: Optional[str] = None) -> ExtractionResult:
         """
         仅执行数据提取
         Execute data extraction only
@@ -381,4 +548,12 @@ class Engine:
         用于测试和调试
         For testing and debugging.
         """
-        return await self._extract(url)
+        adapter = PlatformRegistry.get_adapter(url)
+        if not adapter:
+            return ExtractionResult(
+                platform="unknown",
+                url=url,
+                success=False,
+                error=f"不支持的平台 | Unsupported platform. Supported: {PlatformRegistry.list_platforms()}"
+            )
+        return await adapter.extract(url, storage_state=storage_state)

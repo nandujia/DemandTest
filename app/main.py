@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.api import analyze
+from app.api import analyze, auth, admin
 from app.platforms.registry import PlatformRegistry
 from app.core.logging_config import setup_logging, get_logger
 
@@ -91,6 +91,8 @@ app.add_middleware(
 
 # 注册路由 Register routes
 app.include_router(analyze.router, prefix="/api/v1", tags=["分析 Analysis"])
+app.include_router(auth.router, prefix="/api/v1", tags=["认证 Auth"])
+app.include_router(admin.router, prefix="/api/v1", tags=["管理 Admin"])
 
 
 @app.get("/")
